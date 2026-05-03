@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { checkIP } from "../../apis/abuseipdb.js";
-import { lookupIndicator, isVirusTotalConfigured } from "../../apis/virustotal.js";
+import { lookupOTX, isOTXConfigured } from "../../apis/alienvault.js";
+import { lookupMalwareBazaar, isAbusechConfigured } from "../../apis/abusech.js";
 import type { IncidentClassification } from "../../types/security.js";
 
 export const incidentTriageSchema = z.object({
@@ -161,21 +162,31 @@ async function enrichIndicators(indicators: IncidentTriageInput["indicators"]) {
 
   if (indicators.suspicious_hashes?.length) {
     results.hash_analysis = [];
-    if (isVirusTotalConfigured()) {
-      for (const hash of indicators.suspicious_hashes.slice(0, 3)) {
+    for (const hash of indicators.suspicious_hashes.slice(0, 3)) {
+      const hashType = hash.length === 32 ? "hash_md5" : hash.length === 40 ? "hash_sha1" : "hash_sha256";
+      const sources: Record<string, unknown> = {};
+
+      if (isAbusechConfigured()) {
         try {
-          const hashType = hash.length === 32 ? "hash_md5" : hash.length === 40 ? "hash_sha1" : "hash_sha256";
-          const result = await lookupIndicator(hash, hashType);
-          (results.hash_analysis as any[]).push(result);
-        } catch {
-          (results.hash_analysis as any[]).push({ hash, error: "Lookup failed" });
+          sources.malware_bazaar = await lookupMalwareBazaar(hash);
+        } catch (err) {
+          sources.malware_bazaar = { error: String(err) };
         }
+      } else {
+        sources.malware_bazaar = { skipped: "ABUSECH_API_KEY not configured (free at auth.abuse.ch)" };
       }
-    } else {
-      (results.hash_analysis as any[]) = indicators.suspicious_hashes.map((hash) => ({
-        hash,
-        skipped: "VirusTotal not configured (commercial license required)",
-      }));
+
+      if (isOTXConfigured()) {
+        try {
+          sources.alienvault_otx = await lookupOTX(hash, hashType);
+        } catch (err) {
+          sources.alienvault_otx = { error: String(err) };
+        }
+      } else {
+        sources.alienvault_otx = { skipped: "OTX_API_KEY not configured (free at otx.alienvault.com)" };
+      }
+
+      (results.hash_analysis as any[]).push({ hash, type: hashType, sources });
     }
   }
 

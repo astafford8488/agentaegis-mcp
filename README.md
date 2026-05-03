@@ -28,7 +28,8 @@ Add to `claude_desktop_config.json`:
       "env": {
         "NVD_API_KEY": "...",
         "ABUSEIPDB_API_KEY": "...",
-        "VIRUSTOTAL_API_KEY": "...",
+        "OTX_API_KEY": "...",
+        "ABUSECH_API_KEY": "...",
         "HIBP_API_KEY": "..."
       }
     }
@@ -78,7 +79,7 @@ Authorization: Bearer aegis_<your-api-key>
 │              20 Tool Handlers                                │
 ├──────────────────────────┬────────────────────────────────┤
 │  Engine Wrappers         │  External APIs                  │
-│  nmap, Nuclei, sslyze,   │  NVD, AbuseIPDB, VirusTotal,    │
+│  nmap, Nuclei, sslyze,   │  NVD, AbuseIPDB, AlienVault OTX + abuse.ch,    │
 │  Semgrep, trufflehog,    │  HIBP, Shodan                   │
 │  trivy                   │                                  │
 ├──────────────────────────┴────────────────────────────────┤
@@ -179,7 +180,7 @@ railway up
 Required env vars (set in Railway dashboard):
 - `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`
 - `X402_PAYEE_ADDRESS` (your wallet)
-- `NVD_API_KEY`, `ABUSEIPDB_API_KEY`, `VIRUSTOTAL_API_KEY`, `HIBP_API_KEY`
+- `NVD_API_KEY`, `ABUSEIPDB_API_KEY`, `OTX_API_KEY`, `ABUSECH_API_KEY`, `HIBP_API_KEY`
 
 ### Database setup
 

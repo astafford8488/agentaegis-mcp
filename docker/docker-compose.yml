@@ -13,7 +13,8 @@ services:
       # External APIs
       - NVD_API_KEY=${NVD_API_KEY:-}
       - ABUSEIPDB_API_KEY=${ABUSEIPDB_API_KEY:-}
-      - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY:-}
+      - OTX_API_KEY=${OTX_API_KEY:-}
+      - ABUSECH_API_KEY=${ABUSECH_API_KEY:-}
       - HIBP_API_KEY=${HIBP_API_KEY:-}
       - SHODAN_API_KEY=${SHODAN_API_KEY:-}
       # Supabase
