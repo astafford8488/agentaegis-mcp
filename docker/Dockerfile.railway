@@ -1,0 +1,55 @@
+FROM node:20-slim
+
+# Install scanning engines
+RUN apt-get update && apt-get install -y \
+    nmap \
+    python3 \
+    python3-pip \
+    git \
+    curl \
+    wget \
+    unzip \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python-based tools
+RUN pip3 install --break-system-packages sslyze semgrep
+
+# Install trufflehog
+RUN curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
+
+# Install trivy
+RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+# Install nuclei
+RUN curl -sfL "https://github.com/projectdiscovery/nuclei/releases/latest/download/nuclei_3.3.5_linux_amd64.zip" -o /tmp/nuclei.zip \
+    && unzip /tmp/nuclei.zip -d /usr/local/bin nuclei \
+    && rm /tmp/nuclei.zip \
+    && chmod +x /usr/local/bin/nuclei \
+    && /usr/local/bin/nuclei -update-templates -silent || true
+
+# Set up app
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy and install deps
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+# Copy source and build
+COPY . .
+RUN pnpm build
+
+# Create temp directory for scans
+RUN mkdir -p /tmp/aegis-scans && chmod 777 /tmp/aegis-scans
+
+# Cleanup
+RUN rm -rf node_modules/.cache
+
+EXPOSE 3000
+
+ENV NODE_ENV=production
+
+CMD ["node", "dist/http-server.js"]

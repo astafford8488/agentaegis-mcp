@@ -1,0 +1,77 @@
+{
+  "framework": "hipaa",
+  "version": "Security Rule (45 CFR §164.302-318)",
+  "categories": [
+    {
+      "id": "administrative_safeguards",
+      "name": "Administrative Safeguards (§164.308)",
+      "controls": [
+        { "id": "164.308(a)(1)(i)", "title": "Security Management Process", "description": "Implement policies and procedures to prevent, detect, contain, and correct security violations.", "required": true, "evidence_types": ["security_policy", "risk_management_program"], "weight": "critical" },
+        { "id": "164.308(a)(1)(ii)(A)", "title": "Risk Analysis", "description": "Conduct an accurate and thorough assessment of the potential risks and vulnerabilities to ePHI.", "required": true, "evidence_types": ["risk_assessment", "vulnerability_assessment"], "weight": "critical" },
+        { "id": "164.308(a)(1)(ii)(B)", "title": "Risk Management", "description": "Implement security measures sufficient to reduce risks and vulnerabilities to a reasonable and appropriate level.", "required": true, "evidence_types": ["risk_treatment_plan", "controls_documentation"], "weight": "critical" },
+        { "id": "164.308(a)(1)(ii)(C)", "title": "Sanction Policy", "description": "Apply appropriate sanctions against workforce members who fail to comply with the security policies.", "required": true, "evidence_types": ["sanction_policy", "disciplinary_records"], "weight": "high" },
+        { "id": "164.308(a)(1)(ii)(D)", "title": "Information System Activity Review", "description": "Implement procedures to regularly review records of information system activity (audit logs, access reports).", "required": true, "evidence_types": ["log_review_procedures", "audit_records"], "weight": "critical" },
+        { "id": "164.308(a)(2)", "title": "Assigned Security Responsibility", "description": "Identify the security official who is responsible for the development and implementation of policies.", "required": true, "evidence_types": ["security_officer_designation"], "weight": "high" },
+        { "id": "164.308(a)(3)(i)", "title": "Workforce Security", "description": "Implement policies and procedures to ensure all workforce members have appropriate access to ePHI.", "required": true, "evidence_types": ["workforce_security_policy"], "weight": "high" },
+        { "id": "164.308(a)(3)(ii)(A)", "title": "Authorization and/or Supervision", "description": "Implement procedures for the authorization and/or supervision of workforce members who work with ePHI.", "required": false, "evidence_types": ["authorization_workflows"], "weight": "high" },
+        { "id": "164.308(a)(3)(ii)(B)", "title": "Workforce Clearance Procedure", "description": "Implement procedures to determine that the access of a workforce member is appropriate.", "required": false, "evidence_types": ["clearance_procedures", "background_checks"], "weight": "high" },
+        { "id": "164.308(a)(3)(ii)(C)", "title": "Termination Procedures", "description": "Implement procedures for terminating access to ePHI when employment ends or when needed.", "required": false, "evidence_types": ["offboarding_procedures", "access_removal_records"], "weight": "critical" },
+        { "id": "164.308(a)(4)(i)", "title": "Information Access Management", "description": "Implement policies and procedures for authorizing access to ePHI consistent with the Privacy Rule.", "required": true, "evidence_types": ["access_management_policy"], "weight": "critical" },
+        { "id": "164.308(a)(4)(ii)(A)", "title": "Isolating Health Care Clearinghouse Functions", "description": "Policies to separate clearinghouse functions from larger organizations.", "required": false, "evidence_types": ["isolation_documentation"], "weight": "low" },
+        { "id": "164.308(a)(4)(ii)(B)", "title": "Access Authorization", "description": "Implement policies and procedures for granting access to ePHI.", "required": false, "evidence_types": ["access_request_workflows"], "weight": "critical" },
+        { "id": "164.308(a)(4)(ii)(C)", "title": "Access Establishment and Modification", "description": "Implement policies for establishing and modifying user access.", "required": false, "evidence_types": ["access_modification_logs"], "weight": "high" },
+        { "id": "164.308(a)(5)(i)", "title": "Security Awareness and Training", "description": "Implement a security awareness and training program for all workforce members.", "required": true, "evidence_types": ["training_program", "training_records"], "weight": "critical" },
+        { "id": "164.308(a)(5)(ii)(A)", "title": "Security Reminders", "description": "Periodic security updates.", "required": false, "evidence_types": ["security_communications"], "weight": "medium" },
+        { "id": "164.308(a)(5)(ii)(B)", "title": "Protection from Malicious Software", "description": "Procedures for guarding against, detecting, and reporting malicious software.", "required": false, "evidence_types": ["av_edr_config", "malware_alerts"], "weight": "critical" },
+        { "id": "164.308(a)(5)(ii)(C)", "title": "Log-in Monitoring", "description": "Procedures for monitoring log-in attempts and reporting discrepancies.", "required": false, "evidence_types": ["login_monitoring", "siem_alerts"], "weight": "high" },
+        { "id": "164.308(a)(5)(ii)(D)", "title": "Password Management", "description": "Procedures for creating, changing, and safeguarding passwords.", "required": false, "evidence_types": ["password_policy"], "weight": "high" },
+        { "id": "164.308(a)(6)(i)", "title": "Security Incident Procedures", "description": "Implement policies and procedures to address security incidents.", "required": true, "evidence_types": ["incident_response_plan"], "weight": "critical" },
+        { "id": "164.308(a)(6)(ii)", "title": "Response and Reporting", "description": "Identify and respond to suspected or known security incidents; mitigate harmful effects; document incidents and outcomes.", "required": true, "evidence_types": ["incident_records", "response_procedures"], "weight": "critical" },
+        { "id": "164.308(a)(7)(i)", "title": "Contingency Plan", "description": "Establish policies and procedures for responding to an emergency or other occurrence that damages systems.", "required": true, "evidence_types": ["contingency_plan", "dr_plan"], "weight": "critical" },
+        { "id": "164.308(a)(7)(ii)(A)", "title": "Data Backup Plan", "description": "Establish and implement procedures to create and maintain retrievable exact copies of ePHI.", "required": true, "evidence_types": ["backup_policy", "backup_records"], "weight": "critical" },
+        { "id": "164.308(a)(7)(ii)(B)", "title": "Disaster Recovery Plan", "description": "Establish procedures to restore any loss of data.", "required": true, "evidence_types": ["dr_plan", "dr_test_results"], "weight": "critical" },
+        { "id": "164.308(a)(7)(ii)(C)", "title": "Emergency Mode Operation Plan", "description": "Establish procedures to enable continuation of critical business processes for protection of ePHI.", "required": true, "evidence_types": ["emergency_operation_plan"], "weight": "high" },
+        { "id": "164.308(a)(7)(ii)(D)", "title": "Testing and Revision Procedures", "description": "Periodic testing and revision of contingency plans.", "required": false, "evidence_types": ["test_records", "plan_revisions"], "weight": "high" },
+        { "id": "164.308(a)(7)(ii)(E)", "title": "Applications and Data Criticality Analysis", "description": "Assess the relative criticality of specific applications and data.", "required": false, "evidence_types": ["criticality_analysis"], "weight": "medium" },
+        { "id": "164.308(a)(8)", "title": "Evaluation", "description": "Perform a periodic technical and nontechnical evaluation.", "required": true, "evidence_types": ["evaluation_reports", "audit_results"], "weight": "critical" },
+        { "id": "164.308(b)(1)", "title": "Business Associate Contracts", "description": "Obtain satisfactory assurances that business associates will appropriately safeguard ePHI.", "required": true, "evidence_types": ["baa_inventory", "vendor_assessments"], "weight": "critical" }
+      ]
+    },
+    {
+      "id": "physical_safeguards",
+      "name": "Physical Safeguards (§164.310)",
+      "controls": [
+        { "id": "164.310(a)(1)", "title": "Facility Access Controls", "description": "Implement policies and procedures to limit physical access to electronic information systems.", "required": true, "evidence_types": ["facility_access_policy", "badge_logs"], "weight": "high" },
+        { "id": "164.310(a)(2)(i)", "title": "Contingency Operations", "description": "Establish procedures for facility access during contingency.", "required": false, "evidence_types": ["contingency_access_procedures"], "weight": "medium" },
+        { "id": "164.310(a)(2)(ii)", "title": "Facility Security Plan", "description": "Implement policies to safeguard the facility and equipment.", "required": false, "evidence_types": ["facility_security_plan"], "weight": "high" },
+        { "id": "164.310(a)(2)(iii)", "title": "Access Control and Validation Procedures", "description": "Implement procedures to control and validate a person's access.", "required": false, "evidence_types": ["access_validation_procedures"], "weight": "high" },
+        { "id": "164.310(a)(2)(iv)", "title": "Maintenance Records", "description": "Implement policies and procedures to document repairs and modifications.", "required": false, "evidence_types": ["maintenance_logs"], "weight": "low" },
+        { "id": "164.310(b)", "title": "Workstation Use", "description": "Implement policies and procedures specifying functions and physical attributes of the surroundings of workstations.", "required": true, "evidence_types": ["workstation_policy"], "weight": "high" },
+        { "id": "164.310(c)", "title": "Workstation Security", "description": "Implement physical safeguards for all workstations that access ePHI.", "required": true, "evidence_types": ["workstation_security_controls"], "weight": "high" },
+        { "id": "164.310(d)(1)", "title": "Device and Media Controls", "description": "Implement policies and procedures that govern the receipt and removal of hardware and electronic media.", "required": true, "evidence_types": ["media_handling_policy"], "weight": "high" },
+        { "id": "164.310(d)(2)(i)", "title": "Disposal", "description": "Implement policies and procedures to address the final disposition of ePHI and hardware.", "required": true, "evidence_types": ["disposal_procedures", "destruction_certificates"], "weight": "critical" },
+        { "id": "164.310(d)(2)(ii)", "title": "Media Re-use", "description": "Implement procedures for removal of ePHI from electronic media before re-use.", "required": true, "evidence_types": ["media_sanitization_procedures"], "weight": "critical" },
+        { "id": "164.310(d)(2)(iii)", "title": "Accountability", "description": "Maintain a record of the movements of hardware and electronic media.", "required": false, "evidence_types": ["asset_tracking"], "weight": "medium" },
+        { "id": "164.310(d)(2)(iv)", "title": "Data Backup and Storage", "description": "Create a retrievable, exact copy of ePHI before movement.", "required": false, "evidence_types": ["backup_procedures"], "weight": "high" }
+      ]
+    },
+    {
+      "id": "technical_safeguards",
+      "name": "Technical Safeguards (§164.312)",
+      "controls": [
+        { "id": "164.312(a)(1)", "title": "Access Control", "description": "Implement technical policies and procedures for electronic information systems that maintain ePHI.", "required": true, "evidence_types": ["iam_config", "access_policy"], "weight": "critical" },
+        { "id": "164.312(a)(2)(i)", "title": "Unique User Identification", "description": "Assign a unique name and/or number for identifying and tracking user identity.", "required": true, "evidence_types": ["user_identity_documentation"], "weight": "critical" },
+        { "id": "164.312(a)(2)(ii)", "title": "Emergency Access Procedure", "description": "Establish procedures for obtaining necessary ePHI during an emergency.", "required": true, "evidence_types": ["emergency_access_procedures"], "weight": "high" },
+        { "id": "164.312(a)(2)(iii)", "title": "Automatic Logoff", "description": "Implement electronic procedures that terminate an electronic session after a predetermined time of inactivity.", "required": false, "evidence_types": ["session_timeout_config"], "weight": "high" },
+        { "id": "164.312(a)(2)(iv)", "title": "Encryption and Decryption", "description": "Implement a mechanism to encrypt and decrypt ePHI.", "required": false, "evidence_types": ["encryption_at_rest_config"], "weight": "critical" },
+        { "id": "164.312(b)", "title": "Audit Controls", "description": "Implement hardware, software, and/or procedural mechanisms that record and examine activity in information systems.", "required": true, "evidence_types": ["audit_logging_config", "log_retention"], "weight": "critical" },
+        { "id": "164.312(c)(1)", "title": "Integrity", "description": "Implement policies and procedures to protect ePHI from improper alteration or destruction.", "required": true, "evidence_types": ["integrity_controls"], "weight": "critical" },
+        { "id": "164.312(c)(2)", "title": "Mechanism to Authenticate ePHI", "description": "Implement electronic mechanisms to corroborate that ePHI has not been altered or destroyed in an unauthorized manner.", "required": false, "evidence_types": ["integrity_validation"], "weight": "high" },
+        { "id": "164.312(d)", "title": "Person or Entity Authentication", "description": "Implement procedures to verify that a person or entity seeking access is the one claimed.", "required": true, "evidence_types": ["authentication_config", "mfa_records"], "weight": "critical" },
+        { "id": "164.312(e)(1)", "title": "Transmission Security", "description": "Implement technical security measures to guard against unauthorized access to ePHI being transmitted.", "required": true, "evidence_types": ["tls_config", "network_security"], "weight": "critical" },
+        { "id": "164.312(e)(2)(i)", "title": "Integrity Controls", "description": "Implement security measures to ensure that electronically transmitted ePHI is not improperly modified.", "required": false, "evidence_types": ["transmission_integrity"], "weight": "high" },
+        { "id": "164.312(e)(2)(ii)", "title": "Encryption", "description": "Implement a mechanism to encrypt ePHI whenever deemed appropriate.", "required": false, "evidence_types": ["encryption_in_transit"], "weight": "critical" }
+      ]
+    }
+  ]
+}

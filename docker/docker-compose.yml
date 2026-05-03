@@ -9,15 +9,22 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      - PORT=3000
+      # External APIs
       - NVD_API_KEY=${NVD_API_KEY:-}
       - ABUSEIPDB_API_KEY=${ABUSEIPDB_API_KEY:-}
       - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY:-}
       - HIBP_API_KEY=${HIBP_API_KEY:-}
       - SHODAN_API_KEY=${SHODAN_API_KEY:-}
+      # Supabase
       - SUPABASE_URL=${SUPABASE_URL:-}
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY:-}
-      - X402_FACILITATOR_URL=${X402_FACILITATOR_URL:-}
+      # x402 Payment
+      - X402_FACILITATOR_URL=${X402_FACILITATOR_URL:-https://x402.org/facilitator}
       - X402_PAYEE_ADDRESS=${X402_PAYEE_ADDRESS:-}
+      - X402_NETWORK=${X402_NETWORK:-base-sepolia}
+      - X402_ASSET=${X402_ASSET:-USDC}
+      # Limits
       - MAX_CONCURRENT_SCANS=5
       - MAX_SCANS_PER_HOUR=10
     volumes:
@@ -29,6 +36,7 @@ services:
       - NET_RAW  # Required for nmap
     security_opt:
       - no-new-privileges:true
+    command: ["node", "dist/http-server.js"]
 
 volumes:
   scan-tmp:
