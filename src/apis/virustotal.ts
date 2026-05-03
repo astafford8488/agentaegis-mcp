@@ -9,12 +9,21 @@ export interface VirusTotalResult {
   details: Record<string, unknown>;
 }
 
+export function isVirusTotalConfigured(): boolean {
+  return !!process.env.VIRUSTOTAL_API_KEY;
+}
+
 export async function lookupIndicator(
   indicator: string,
   indicatorType: "ip" | "domain" | "url" | "hash_md5" | "hash_sha1" | "hash_sha256"
 ): Promise<VirusTotalResult | null> {
   const apiKey = process.env.VIRUSTOTAL_API_KEY;
-  if (!apiKey) throw new Error("VIRUSTOTAL_API_KEY not configured");
+  if (!apiKey) {
+    // Caller should check isVirusTotalConfigured() first; if they didn't,
+    // we return null rather than throwing so the surrounding logic can
+    // gracefully aggregate from other sources.
+    return null;
+  }
 
   let endpoint: string;
   switch (indicatorType) {

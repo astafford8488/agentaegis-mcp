@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { checkIP } from "../../apis/abuseipdb.js";
-import { lookupIndicator } from "../../apis/virustotal.js";
+import { lookupIndicator, isVirusTotalConfigured } from "../../apis/virustotal.js";
 
 export const threatIntelLookupSchema = z.object({
   indicator: z.string(),
@@ -30,19 +30,23 @@ export async function threatIntelLookup(input: ThreatIntelLookupInput) {
     }
   }
 
-  // VirusTotal (for all types)
-  try {
-    const vtResult = await lookupIndicator(indicator, indicator_type);
-    sources.virustotal = vtResult;
-    if (vtResult) {
-      const detectionRate = vtResult.detection_ratio.total > 0
-        ? (vtResult.detection_ratio.malicious / vtResult.detection_ratio.total) * 100
-        : 0;
-      overallScore = Math.max(overallScore, detectionRate);
-      if (detectionRate > 10) isMalicious = true;
+  // VirusTotal (for all types) — skipped if no key configured
+  if (isVirusTotalConfigured()) {
+    try {
+      const vtResult = await lookupIndicator(indicator, indicator_type);
+      sources.virustotal = vtResult;
+      if (vtResult) {
+        const detectionRate = vtResult.detection_ratio.total > 0
+          ? (vtResult.detection_ratio.malicious / vtResult.detection_ratio.total) * 100
+          : 0;
+        overallScore = Math.max(overallScore, detectionRate);
+        if (detectionRate > 10) isMalicious = true;
+      }
+    } catch (err) {
+      sources.virustotal = { error: String(err) };
     }
-  } catch (err) {
-    sources.virustotal = { error: String(err) };
+  } else {
+    sources.virustotal = { skipped: "VirusTotal not configured (commercial license required for production use)" };
   }
 
   // Generate recommendations

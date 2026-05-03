@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { checkIP } from "../../apis/abuseipdb.js";
-import { lookupIndicator } from "../../apis/virustotal.js";
+import { lookupIndicator, isVirusTotalConfigured } from "../../apis/virustotal.js";
 import type { IncidentClassification } from "../../types/security.js";
 
 export const incidentTriageSchema = z.object({
@@ -161,14 +161,21 @@ async function enrichIndicators(indicators: IncidentTriageInput["indicators"]) {
 
   if (indicators.suspicious_hashes?.length) {
     results.hash_analysis = [];
-    for (const hash of indicators.suspicious_hashes.slice(0, 3)) {
-      try {
-        const hashType = hash.length === 32 ? "hash_md5" : hash.length === 40 ? "hash_sha1" : "hash_sha256";
-        const result = await lookupIndicator(hash, hashType);
-        (results.hash_analysis as any[]).push(result);
-      } catch {
-        (results.hash_analysis as any[]).push({ hash, error: "Lookup failed" });
+    if (isVirusTotalConfigured()) {
+      for (const hash of indicators.suspicious_hashes.slice(0, 3)) {
+        try {
+          const hashType = hash.length === 32 ? "hash_md5" : hash.length === 40 ? "hash_sha1" : "hash_sha256";
+          const result = await lookupIndicator(hash, hashType);
+          (results.hash_analysis as any[]).push(result);
+        } catch {
+          (results.hash_analysis as any[]).push({ hash, error: "Lookup failed" });
+        }
       }
+    } else {
+      (results.hash_analysis as any[]) = indicators.suspicious_hashes.map((hash) => ({
+        hash,
+        skipped: "VirusTotal not configured (commercial license required)",
+      }));
     }
   }
 
