@@ -1,0 +1,54 @@
+====================================
+AgentAegis Demo Prompts
+====================================
+
+DEMO 1: "The 90-Second Security Audit"
+---------------------------------------
+I just launched a SaaS app at example.com. Can you do a quick security assessment? Check the SSL config, DNS security, email security, and whether any of our team's credentials have been in breaches. Our domain is example.com.
+
+Expected tools called:
+- ssl_tls_audit (hostname: "example.com")
+- dns_security_check (domain: "example.com")
+- email_security_audit (domain: "example.com", include_mx_analysis: true)
+- credential_check (check_type: "domain", target: "example.com")
+
+
+DEMO 2: "SOC 2 Readiness Check"
+---------------------------------
+We're a 45-person SaaS company handling customer PII. We use AWS, GitHub, Okta, and Datadog. We don't have a SOC 2 report yet. Can you assess our readiness and tell us what we need to do? Generate any missing security policies we'd need.
+
+Expected tools called:
+- compliance_framework_check (framework: "soc2", organization_profile: {...})
+- control_gap_analysis (framework: "soc2", failing_controls: [...])
+- policy_generate (policy_type: "incident_response", ...)
+- policy_generate (policy_type: "access_control", ...)
+- audit_report_generate (framework: "soc2", ...)
+
+
+DEMO 3: "Scan Our Codebase"
+-----------------------------
+Can you scan our GitHub repo at https://github.com/example/demo-app for security issues? Check for hardcoded secrets, vulnerable dependencies, and any code-level vulnerabilities.
+
+Expected tools called:
+- secret_scan (source: {type: "git_repo", url: "..."})
+- dependency_audit (source: {type: "git_repo", url: "..."})
+- sast_scan (source: {type: "git_repo", url: "..."})
+
+
+DEMO 4: "Incident Response"
+-----------------------------
+We've detected suspicious login activity from IP 203.0.113.45. Multiple failed login attempts followed by one success from this IP at 3am. The affected account is admin@example.com. We use AWS and have CrowdStrike deployed. Help us triage this.
+
+Expected tools called:
+- incident_triage (incident_description: "...", indicators: {suspicious_ips: ["203.0.113.45"], ...})
+- threat_intel_lookup (indicator: "203.0.113.45", indicator_type: "ip")
+- credential_check (check_type: "email", target: "admin@example.com")
+
+
+DEMO 5: "Vulnerability Prioritization"
+-----------------------------------------
+We ran a scan and found 15 CVEs across our infrastructure. Can you prioritize them for us? Our systems are internet-facing and handle payment card data.
+
+Expected tools called:
+- vuln_prioritize (findings: [...], business_context: {internet_facing: true, handles_sensitive_data: true, business_criticality: "critical"})
+- cve_lookup (cve_id: "CVE-2024-...") [for top findings]

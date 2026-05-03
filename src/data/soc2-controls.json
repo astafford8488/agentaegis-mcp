@@ -1,0 +1,450 @@
+{
+  "framework": "soc2",
+  "version": "2017 Trust Services Criteria",
+  "categories": [
+    {
+      "id": "security",
+      "name": "Security (Common Criteria)",
+      "controls": [
+        {
+          "id": "CC1.1",
+          "subcategory": "control_environment",
+          "title": "COSO Principle 1: Integrity and Ethical Values",
+          "description": "The entity demonstrates a commitment to integrity and ethical values.",
+          "evidence_types": ["code_of_conduct", "ethics_policy", "training_records", "background_checks"],
+          "common_tools": [],
+          "evaluation_criteria": "Documented code of conduct, ethics training for all employees, background check policy",
+          "weight": "high"
+        },
+        {
+          "id": "CC1.2",
+          "subcategory": "control_environment",
+          "title": "COSO Principle 2: Board Independence and Oversight",
+          "description": "The board of directors demonstrates independence from management and exercises oversight.",
+          "evidence_types": ["board_charter", "meeting_minutes", "committee_structure"],
+          "common_tools": [],
+          "evaluation_criteria": "Board or oversight body with defined security responsibilities",
+          "weight": "medium"
+        },
+        {
+          "id": "CC1.3",
+          "subcategory": "control_environment",
+          "title": "COSO Principle 3: Management Structure and Authority",
+          "description": "Management establishes structures, reporting lines, and appropriate authorities.",
+          "evidence_types": ["org_chart", "job_descriptions", "reporting_structure"],
+          "common_tools": [],
+          "evaluation_criteria": "Clear organizational structure with defined security responsibilities",
+          "weight": "medium"
+        },
+        {
+          "id": "CC1.4",
+          "subcategory": "control_environment",
+          "title": "COSO Principle 4: Commitment to Competence",
+          "description": "The entity demonstrates commitment to attract, develop, and retain competent individuals.",
+          "evidence_types": ["job_descriptions", "training_plans", "certification_records"],
+          "common_tools": ["knowbe4", "proofpoint_security_awareness"],
+          "evaluation_criteria": "Security training program, competency requirements for security roles",
+          "weight": "medium"
+        },
+        {
+          "id": "CC1.5",
+          "subcategory": "control_environment",
+          "title": "COSO Principle 5: Accountability",
+          "description": "The entity holds individuals accountable for internal control responsibilities.",
+          "evidence_types": ["performance_reviews", "security_responsibilities", "disciplinary_policy"],
+          "common_tools": [],
+          "evaluation_criteria": "Security responsibilities in job descriptions, accountability mechanisms",
+          "weight": "medium"
+        },
+        {
+          "id": "CC2.1",
+          "subcategory": "communication_and_information",
+          "title": "Information for Internal Control",
+          "description": "The entity obtains or generates and uses relevant, quality information to support internal control.",
+          "evidence_types": ["information_classification", "data_inventory", "system_inventory"],
+          "common_tools": ["cmdb", "service_catalog"],
+          "evaluation_criteria": "Asset inventory maintained, data classification scheme implemented",
+          "weight": "high"
+        },
+        {
+          "id": "CC2.2",
+          "subcategory": "communication_and_information",
+          "title": "Internal Communication",
+          "description": "The entity internally communicates information necessary for internal control.",
+          "evidence_types": ["security_policies", "communication_records", "awareness_training"],
+          "common_tools": ["slack", "teams", "confluence"],
+          "evaluation_criteria": "Security policies communicated to all employees, security awareness program",
+          "weight": "medium"
+        },
+        {
+          "id": "CC2.3",
+          "subcategory": "communication_and_information",
+          "title": "External Communication",
+          "description": "The entity communicates with external parties regarding matters affecting internal control.",
+          "evidence_types": ["privacy_policy", "terms_of_service", "incident_notification_procedures"],
+          "common_tools": [],
+          "evaluation_criteria": "Privacy policy published, incident notification procedures documented",
+          "weight": "medium"
+        },
+        {
+          "id": "CC3.1",
+          "subcategory": "risk_assessment",
+          "title": "Risk Assessment Objectives",
+          "description": "The entity specifies objectives with sufficient clarity to enable identification of risks.",
+          "evidence_types": ["risk_assessment_report", "risk_register", "security_objectives"],
+          "common_tools": ["riskonnect", "servicenow_grc"],
+          "evaluation_criteria": "Annual risk assessment conducted, risk register maintained",
+          "weight": "high"
+        },
+        {
+          "id": "CC3.2",
+          "subcategory": "risk_assessment",
+          "title": "Risk Identification and Analysis",
+          "description": "The entity identifies risks and analyzes them to determine how risks should be managed.",
+          "evidence_types": ["risk_register", "threat_assessment", "vulnerability_assessment"],
+          "common_tools": ["qualys", "tenable", "rapid7"],
+          "evaluation_criteria": "Risks identified, assessed for likelihood and impact, treatment decisions documented",
+          "weight": "high"
+        },
+        {
+          "id": "CC3.3",
+          "subcategory": "risk_assessment",
+          "title": "Fraud Risk Assessment",
+          "description": "The entity considers the potential for fraud in assessing risks.",
+          "evidence_types": ["fraud_risk_assessment", "anti_fraud_controls"],
+          "common_tools": [],
+          "evaluation_criteria": "Fraud risks identified and mitigating controls in place",
+          "weight": "medium"
+        },
+        {
+          "id": "CC3.4",
+          "subcategory": "risk_assessment",
+          "title": "Change Risk Assessment",
+          "description": "The entity identifies and assesses changes that could significantly affect internal control.",
+          "evidence_types": ["change_management_policy", "change_risk_assessments"],
+          "common_tools": ["jira", "servicenow"],
+          "evaluation_criteria": "Changes assessed for security impact before implementation",
+          "weight": "medium"
+        },
+        {
+          "id": "CC4.1",
+          "subcategory": "monitoring",
+          "title": "Monitoring Activities",
+          "description": "The entity selects, develops, and performs evaluations to ascertain whether controls are present and functioning.",
+          "evidence_types": ["monitoring_config", "audit_reports", "control_testing_results"],
+          "common_tools": ["datadog", "splunk", "elastic", "grafana"],
+          "evaluation_criteria": "Ongoing monitoring of security controls, periodic assessment of control effectiveness",
+          "weight": "high"
+        },
+        {
+          "id": "CC4.2",
+          "subcategory": "monitoring",
+          "title": "Deficiency Communication",
+          "description": "The entity evaluates and communicates internal control deficiencies.",
+          "evidence_types": ["deficiency_reports", "remediation_tracking", "management_responses"],
+          "common_tools": ["jira", "servicenow"],
+          "evaluation_criteria": "Deficiencies tracked, remediated, and reported to appropriate levels",
+          "weight": "medium"
+        },
+        {
+          "id": "CC5.1",
+          "subcategory": "control_activities",
+          "title": "Control Activities for Mitigation",
+          "description": "The entity selects and develops control activities that contribute to risk mitigation.",
+          "evidence_types": ["controls_matrix", "security_architecture", "defense_in_depth_documentation"],
+          "common_tools": ["crowdstrike", "palo_alto", "zscaler"],
+          "evaluation_criteria": "Defense-in-depth controls deployed, control effectiveness measured",
+          "weight": "high"
+        },
+        {
+          "id": "CC5.2",
+          "subcategory": "control_activities",
+          "title": "Technology General Controls",
+          "description": "The entity selects and develops general control activities over technology.",
+          "evidence_types": ["it_general_controls", "technology_standards", "hardening_guides"],
+          "common_tools": ["chef", "ansible", "terraform"],
+          "evaluation_criteria": "Technology controls defined and consistently applied",
+          "weight": "high"
+        },
+        {
+          "id": "CC5.3",
+          "subcategory": "control_activities",
+          "title": "Control Activity Policies",
+          "description": "The entity deploys control activities through policies and procedures.",
+          "evidence_types": ["security_policies", "procedures", "standards"],
+          "common_tools": ["confluence", "notion", "sharepoint"],
+          "evaluation_criteria": "Policies documented, approved, communicated, and reviewed annually",
+          "weight": "high"
+        },
+        {
+          "id": "CC6.1",
+          "subcategory": "logical_and_physical_access",
+          "title": "Logical Access Security",
+          "description": "The entity implements logical access security over protected information assets.",
+          "evidence_types": ["iam_config", "access_control_policy", "user_access_review", "mfa_config"],
+          "common_tools": ["okta", "azure_ad", "aws_iam", "duo"],
+          "evaluation_criteria": "Centralized identity provider with RBAC and MFA enforced for all users",
+          "weight": "critical"
+        },
+        {
+          "id": "CC6.2",
+          "subcategory": "logical_and_physical_access",
+          "title": "User Registration and Authorization",
+          "description": "Prior to issuing access, the entity registers and authorizes new users.",
+          "evidence_types": ["onboarding_process", "access_request_records", "approval_evidence"],
+          "common_tools": ["okta", "sailpoint", "saviynt"],
+          "evaluation_criteria": "Formal access request and approval process, management authorization required",
+          "weight": "high"
+        },
+        {
+          "id": "CC6.3",
+          "subcategory": "logical_and_physical_access",
+          "title": "Role-Based Access and Least Privilege",
+          "description": "The entity authorizes, modifies, or removes access based on roles and least privilege.",
+          "evidence_types": ["rbac_matrix", "role_definitions", "access_review_records"],
+          "common_tools": ["okta", "azure_ad", "aws_iam"],
+          "evaluation_criteria": "Roles defined with minimum necessary permissions, periodic access reviews",
+          "weight": "high"
+        },
+        {
+          "id": "CC6.4",
+          "subcategory": "logical_and_physical_access",
+          "title": "Physical Access Restrictions",
+          "description": "The entity restricts physical access to facilities and protected information assets.",
+          "evidence_types": ["physical_security_policy", "badge_access_logs", "visitor_logs"],
+          "common_tools": ["kisi", "openpath", "brivo"],
+          "evaluation_criteria": "Physical access controls for data centers and offices, visitor management",
+          "weight": "medium"
+        },
+        {
+          "id": "CC6.5",
+          "subcategory": "logical_and_physical_access",
+          "title": "Deprovisioning Access",
+          "description": "The entity discontinues logical and physical access when no longer needed.",
+          "evidence_types": ["offboarding_checklist", "termination_records", "access_removal_evidence"],
+          "common_tools": ["okta", "workday", "bamboohr"],
+          "evaluation_criteria": "Access removed within 24 hours of termination, offboarding checklist followed",
+          "weight": "critical"
+        },
+        {
+          "id": "CC6.6",
+          "subcategory": "logical_and_physical_access",
+          "title": "Boundary Protection",
+          "description": "The entity implements logical access security measures to protect against threats from external sources.",
+          "evidence_types": ["firewall_config", "network_diagram", "waf_config"],
+          "common_tools": ["cloudflare", "aws_waf", "palo_alto", "fortinet"],
+          "evaluation_criteria": "Firewall rules, WAF deployed, network segmentation, intrusion detection",
+          "weight": "critical"
+        },
+        {
+          "id": "CC6.7",
+          "subcategory": "logical_and_physical_access",
+          "title": "Data Transmission Security",
+          "description": "The entity restricts the transmission of information to authorized external parties.",
+          "evidence_types": ["encryption_policy", "tls_config", "data_transfer_agreements"],
+          "common_tools": ["lets_encrypt", "digicert", "aws_acm"],
+          "evaluation_criteria": "TLS 1.2+ enforced, data encryption in transit, DLP controls",
+          "weight": "high"
+        },
+        {
+          "id": "CC6.8",
+          "subcategory": "logical_and_physical_access",
+          "title": "Software Installation Controls",
+          "description": "The entity implements controls to prevent or detect unauthorized or malicious software.",
+          "evidence_types": ["endpoint_protection_config", "software_allowlist", "malware_scan_results"],
+          "common_tools": ["crowdstrike", "sentinelone", "carbon_black", "defender"],
+          "evaluation_criteria": "EDR/AV deployed on all endpoints, unauthorized software installation prevented",
+          "weight": "high"
+        },
+        {
+          "id": "CC7.1",
+          "subcategory": "system_operations",
+          "title": "Detection of Security Events",
+          "description": "The entity uses detection and monitoring procedures to identify anomalies and security events.",
+          "evidence_types": ["monitoring_config", "alert_policies", "siem_config", "detection_rules"],
+          "common_tools": ["datadog", "splunk", "elastic", "crowdstrike", "sentinel"],
+          "evaluation_criteria": "SIEM/monitoring deployed, security alerting configured, 24/7 monitoring or on-call",
+          "weight": "critical"
+        },
+        {
+          "id": "CC7.2",
+          "subcategory": "system_operations",
+          "title": "Incident Response",
+          "description": "The entity monitors for and responds to security incidents.",
+          "evidence_types": ["incident_response_plan", "incident_records", "postmortem_reports"],
+          "common_tools": ["pagerduty", "opsgenie", "jira"],
+          "evaluation_criteria": "IRP documented and tested, incidents tracked and resolved, lessons learned",
+          "weight": "critical"
+        },
+        {
+          "id": "CC7.3",
+          "subcategory": "system_operations",
+          "title": "Incident Recovery",
+          "description": "The entity identifies, develops, and implements activities to recover from security incidents.",
+          "evidence_types": ["recovery_procedures", "backup_config", "dr_plan"],
+          "common_tools": ["aws_backup", "veeam", "azure_backup"],
+          "evaluation_criteria": "Recovery procedures documented, backups tested, DR plan validated",
+          "weight": "high"
+        },
+        {
+          "id": "CC7.4",
+          "subcategory": "system_operations",
+          "title": "Security Event Communication",
+          "description": "The entity responds to identified security incidents by communicating to affected parties.",
+          "evidence_types": ["notification_procedures", "communication_templates", "breach_notification_records"],
+          "common_tools": [],
+          "evaluation_criteria": "Incident notification procedures documented, stakeholders identified",
+          "weight": "high"
+        },
+        {
+          "id": "CC8.1",
+          "subcategory": "change_management",
+          "title": "Change Management Process",
+          "description": "The entity authorizes, designs, develops, configures, documents, tests, approves, and implements changes.",
+          "evidence_types": ["change_management_policy", "change_records", "code_review_evidence", "deployment_logs"],
+          "common_tools": ["github", "gitlab", "jira", "servicenow"],
+          "evaluation_criteria": "Changes tracked, reviewed, approved, and tested before production deployment",
+          "weight": "critical"
+        },
+        {
+          "id": "CC9.1",
+          "subcategory": "risk_mitigation",
+          "title": "Risk Mitigation Activities",
+          "description": "The entity identifies, selects, and develops risk mitigation activities.",
+          "evidence_types": ["risk_treatment_plan", "security_controls_inventory", "vendor_assessments"],
+          "common_tools": ["qualys", "tenable", "rapid7", "crowdstrike"],
+          "evaluation_criteria": "Risks treated with appropriate controls, third-party risks assessed",
+          "weight": "high"
+        },
+        {
+          "id": "CC9.2",
+          "subcategory": "risk_mitigation",
+          "title": "Vendor Risk Management",
+          "description": "The entity assesses and manages risks associated with vendors and business partners.",
+          "evidence_types": ["vendor_assessments", "vendor_contracts", "sla_reviews"],
+          "common_tools": ["whistic", "securityscorecard", "bitsight"],
+          "evaluation_criteria": "Critical vendors assessed annually, security requirements in contracts",
+          "weight": "high"
+        }
+      ]
+    },
+    {
+      "id": "availability",
+      "name": "Availability",
+      "controls": [
+        {
+          "id": "A1.1",
+          "subcategory": "availability",
+          "title": "System Availability Commitments",
+          "description": "The entity maintains, monitors, and evaluates current processing capacity and usage.",
+          "evidence_types": ["sla_documentation", "capacity_planning", "uptime_monitoring"],
+          "common_tools": ["datadog", "pingdom", "statuspage"],
+          "evaluation_criteria": "SLAs defined, uptime monitored, capacity planning conducted",
+          "weight": "high"
+        },
+        {
+          "id": "A1.2",
+          "subcategory": "availability",
+          "title": "Environmental Protections",
+          "description": "The entity authorizes, designs, and implements environmental protections and controls.",
+          "evidence_types": ["backup_policy", "dr_plan", "business_continuity_plan"],
+          "common_tools": ["aws_backup", "azure_backup", "veeam"],
+          "evaluation_criteria": "Backups configured and tested, DR plan documented and tested annually",
+          "weight": "high"
+        },
+        {
+          "id": "A1.3",
+          "subcategory": "availability",
+          "title": "Recovery Testing",
+          "description": "The entity tests recovery plan procedures supporting system recovery.",
+          "evidence_types": ["dr_test_results", "backup_restoration_tests", "failover_test_records"],
+          "common_tools": [],
+          "evaluation_criteria": "Annual DR test conducted, recovery objectives validated",
+          "weight": "high"
+        }
+      ]
+    },
+    {
+      "id": "confidentiality",
+      "name": "Confidentiality",
+      "controls": [
+        {
+          "id": "C1.1",
+          "subcategory": "confidentiality",
+          "title": "Confidential Information Identification",
+          "description": "The entity identifies and maintains confidential information.",
+          "evidence_types": ["data_classification_policy", "data_inventory", "retention_policy"],
+          "common_tools": ["varonis", "bigid", "spirion"],
+          "evaluation_criteria": "Data classified, confidential data identified, handling procedures defined",
+          "weight": "high"
+        },
+        {
+          "id": "C1.2",
+          "subcategory": "confidentiality",
+          "title": "Confidential Information Disposal",
+          "description": "The entity disposes of confidential information to meet objectives.",
+          "evidence_types": ["data_disposal_policy", "disposal_records", "crypto_erasure_evidence"],
+          "common_tools": [],
+          "evaluation_criteria": "Secure disposal procedures for confidential data, records maintained",
+          "weight": "medium"
+        }
+      ]
+    },
+    {
+      "id": "processing_integrity",
+      "name": "Processing Integrity",
+      "controls": [
+        {
+          "id": "PI1.1",
+          "subcategory": "processing_integrity",
+          "title": "Processing Integrity Objectives",
+          "description": "The entity obtains or generates, uses, and communicates relevant information regarding processing objectives.",
+          "evidence_types": ["processing_documentation", "data_flow_diagrams", "validation_rules"],
+          "common_tools": [],
+          "evaluation_criteria": "Processing objectives defined, data quality controls implemented",
+          "weight": "medium"
+        },
+        {
+          "id": "PI1.2",
+          "subcategory": "processing_integrity",
+          "title": "System Inputs",
+          "description": "The entity implements policies and procedures over system inputs.",
+          "evidence_types": ["input_validation_config", "data_integrity_checks"],
+          "common_tools": [],
+          "evaluation_criteria": "Input validation implemented, error handling defined",
+          "weight": "medium"
+        },
+        {
+          "id": "PI1.3",
+          "subcategory": "processing_integrity",
+          "title": "System Processing",
+          "description": "The entity implements policies and procedures over system processing.",
+          "evidence_types": ["processing_controls", "reconciliation_records"],
+          "common_tools": [],
+          "evaluation_criteria": "Processing controls ensure completeness and accuracy",
+          "weight": "medium"
+        },
+        {
+          "id": "PI1.4",
+          "subcategory": "processing_integrity",
+          "title": "System Outputs",
+          "description": "The entity implements policies and procedures over system output activities.",
+          "evidence_types": ["output_controls", "distribution_records"],
+          "common_tools": [],
+          "evaluation_criteria": "Outputs verified for completeness and distributed to authorized recipients",
+          "weight": "medium"
+        },
+        {
+          "id": "PI1.5",
+          "subcategory": "processing_integrity",
+          "title": "Error Correction",
+          "description": "The entity implements policies and procedures to identify and correct processing errors.",
+          "evidence_types": ["error_handling_procedures", "error_logs", "correction_records"],
+          "common_tools": ["sentry", "bugsnag", "datadog"],
+          "evaluation_criteria": "Error detection and correction processes defined and operational",
+          "weight": "medium"
+        }
+      ]
+    }
+  ]
+}

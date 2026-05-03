@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  agentaegis:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NVD_API_KEY=${NVD_API_KEY:-}
+      - ABUSEIPDB_API_KEY=${ABUSEIPDB_API_KEY:-}
+      - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY:-}
+      - HIBP_API_KEY=${HIBP_API_KEY:-}
+      - SHODAN_API_KEY=${SHODAN_API_KEY:-}
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY:-}
+      - X402_FACILITATOR_URL=${X402_FACILITATOR_URL:-}
+      - X402_PAYEE_ADDRESS=${X402_PAYEE_ADDRESS:-}
+      - MAX_CONCURRENT_SCANS=5
+      - MAX_SCANS_PER_HOUR=10
+    volumes:
+      - scan-tmp:/tmp/aegis-scans
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_RAW  # Required for nmap
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  scan-tmp:

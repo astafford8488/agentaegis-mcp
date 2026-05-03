@@ -1,0 +1,64 @@
+{
+  "framework": "nist_csf",
+  "version": "2.0",
+  "functions": [
+    {
+      "id": "GV",
+      "name": "Govern",
+      "categories": [
+        {"id": "GV.OC", "name": "Organizational Context", "description": "Circumstances surrounding cybersecurity risk management decisions"},
+        {"id": "GV.RM", "name": "Risk Management Strategy", "description": "Priorities, constraints, risk tolerance, and assumptions for operational risk decisions"},
+        {"id": "GV.RR", "name": "Roles, Responsibilities, and Authorities", "description": "Cybersecurity roles, responsibilities, and authorities established"},
+        {"id": "GV.PO", "name": "Policy", "description": "Organizational cybersecurity policy established and communicated"},
+        {"id": "GV.OV", "name": "Oversight", "description": "Results of cybersecurity activities reviewed to adjust strategy"},
+        {"id": "GV.SC", "name": "Cybersecurity Supply Chain Risk Management", "description": "Supply chain risks identified, managed, and monitored"}
+      ]
+    },
+    {
+      "id": "ID",
+      "name": "Identify",
+      "categories": [
+        {"id": "ID.AM", "name": "Asset Management", "description": "Assets managed consistent with their relative importance to organizational objectives and risk strategy"},
+        {"id": "ID.RA", "name": "Risk Assessment", "description": "Risks to the organization are identified, recorded, prioritized, and used for operational risk decisions"},
+        {"id": "ID.IM", "name": "Improvement", "description": "Improvements to organizational cybersecurity risk management processes are identified across all CSF Functions"}
+      ]
+    },
+    {
+      "id": "PR",
+      "name": "Protect",
+      "categories": [
+        {"id": "PR.AA", "name": "Identity Management, Authentication, and Access Control", "description": "Access to assets is managed, and integrity and confidentiality maintained"},
+        {"id": "PR.AT", "name": "Awareness and Training", "description": "Personnel are provided with cybersecurity awareness and training"},
+        {"id": "PR.DS", "name": "Data Security", "description": "Data is managed consistent with risk strategy to protect confidentiality, integrity, and availability"},
+        {"id": "PR.PS", "name": "Platform Security", "description": "Hardware, software, and services of physical and virtual platforms are managed consistent with risk strategy"},
+        {"id": "PR.IR", "name": "Technology Infrastructure Resilience", "description": "Security architectures are managed with the protection of asset confidentiality, integrity, and availability"}
+      ]
+    },
+    {
+      "id": "DE",
+      "name": "Detect",
+      "categories": [
+        {"id": "DE.CM", "name": "Continuous Monitoring", "description": "Assets are monitored to find anomalies, indicators of compromise, and other potentially adverse events"},
+        {"id": "DE.AE", "name": "Adverse Event Analysis", "description": "Anomalies, indicators of compromise, and other potentially adverse events are analyzed to characterize the events and detect cybersecurity incidents"}
+      ]
+    },
+    {
+      "id": "RS",
+      "name": "Respond",
+      "categories": [
+        {"id": "RS.MA", "name": "Incident Management", "description": "Responses to detected cybersecurity incidents are managed"},
+        {"id": "RS.AN", "name": "Incident Analysis", "description": "Investigations are conducted to ensure effective response and support forensics and recovery activities"},
+        {"id": "RS.CO", "name": "Incident Response Reporting and Communication", "description": "Response activities are coordinated with internal and external stakeholders"},
+        {"id": "RS.MI", "name": "Incident Mitigation", "description": "Activities are performed to prevent expansion of an event and mitigate its effects"}
+      ]
+    },
+    {
+      "id": "RC",
+      "name": "Recover",
+      "categories": [
+        {"id": "RC.RP", "name": "Incident Recovery Plan Execution", "description": "Restoration activities are performed to ensure operational availability of systems and services affected by cybersecurity incidents"},
+        {"id": "RC.CO", "name": "Incident Recovery Communication", "description": "Restoration activities are coordinated with internal and external parties"}
+      ]
+    }
+  ]
+}
