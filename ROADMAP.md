@@ -26,6 +26,9 @@ Status as of **2026-05-04**. Use this file as the source of truth when picking u
 | 4 | 8 AgentAegis-specific policies generated | At `audit/policies/` |
 | 5 | x402 micropayments — testnet end-to-end | Real on-chain settlement on Base Sepolia |
 | 5 | x402 micropayments — **mainnet live** | Receiver `0x3347d4E9925cC379a333c017367248e1A11DF7fC` |
+| 5 | **US Provisional Patent filed** — App. No. `64/057,021`, Confirmation #8319 | USPTO receipt 2026-05-04 7:33 PM ET, micro entity, $65 |
+
+**Patent Pending** — provisional discloses dual-rail payment architecture (API-key + x402), MCP-aware body-inspection gating, and unified settlement-to-logging pipeline. 12-month nonprovisional deadline: **2027-05-04**. See `wiki/pages/agentaegis-patent.md` for full filing details.
 
 **Live URLs:**
 - MCP server: https://agentaegis-mcp-production.up.railway.app
