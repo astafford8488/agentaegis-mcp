@@ -1,0 +1,56 @@
+{
+  "metadata": {
+    "policy_type": "access_control",
+    "organization": "AgentAegis",
+    "version": "1.0",
+    "effective_date": "2026-05-04",
+    "next_review_date": "2027-05-04",
+    "owner": "Information Security Team",
+    "applicable_frameworks": [
+      "soc2",
+      "iso27001"
+    ]
+  },
+  "title": "AgentAegis — Access Control Policy",
+  "sections": [
+    {
+      "heading": "1. Purpose",
+      "content": "Establish access control requirements to protect AgentAegis's information systems and data from unauthorized access."
+    },
+    {
+      "heading": "2. Principles",
+      "sub_items": [
+        "Least Privilege: Users receive minimum access required for their role",
+        "Need-to-Know: Access to data granted only when required for job function",
+        "Separation of Duties: No single individual should control all aspects of a critical process"
+      ]
+    },
+    {
+      "heading": "3. Account Management",
+      "sub_items": [
+        "All access requires formal request and management approval",
+        "Accounts provisioned within 24 hours of approved request",
+        "Access removed within 24 hours of employment termination",
+        "Accounts disabled after 90 days of inactivity",
+        "Service accounts documented and reviewed quarterly"
+      ]
+    },
+    {
+      "heading": "4. Authentication",
+      "sub_items": [
+        "Multi-factor authentication required for all accounts",
+        "Passwords: minimum 12 characters, complexity required",
+        "Admin accounts: hardware security keys required",
+        "Session timeout: 15 minutes of inactivity"
+      ]
+    },
+    {
+      "heading": "5. Access Reviews",
+      "content": "User access reviews conducted quarterly. IT manager certify access appropriateness for their teams."
+    },
+    {
+      "heading": "6. Remote Access",
+      "content": "Access to cloud systems requires SSO via corporate identity provider. Direct credential access prohibited."
+    }
+  ]
+}

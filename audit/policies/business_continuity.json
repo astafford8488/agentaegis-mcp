@@ -1,0 +1,52 @@
+{
+  "metadata": {
+    "policy_type": "business_continuity",
+    "organization": "AgentAegis",
+    "version": "1.0",
+    "effective_date": "2026-05-04",
+    "next_review_date": "2027-05-04",
+    "owner": "Information Security Team",
+    "applicable_frameworks": [
+      "soc2",
+      "iso27001"
+    ]
+  },
+  "title": "AgentAegis — Business Continuity Policy",
+  "sections": [
+    {
+      "heading": "1. Purpose",
+      "content": "Ensure AgentAegis can maintain critical business operations during and after a disruptive event."
+    },
+    {
+      "heading": "2. Recovery Objectives",
+      "sub_items": [
+        "RTO (Recovery Time Objective): Maximum acceptable downtime for critical systems",
+        "RPO (Recovery Point Objective): Maximum acceptable data loss measured in time",
+        "Critical systems RTO: 4 hours / RPO: 1 hour",
+        "Standard systems RTO: 24 hours / RPO: 24 hours"
+      ]
+    },
+    {
+      "heading": "3. Backup Requirements",
+      "sub_items": [
+        "Critical data: Daily backups, retained 90 days minimum",
+        "Backups stored in geographically separate location",
+        "Backup restoration tested quarterly",
+        "Encryption required for all backup data"
+      ]
+    },
+    {
+      "heading": "4. Disaster Recovery",
+      "sub_items": [
+        "DR plan documented and maintained for critical systems",
+        "Annual DR test (full failover for critical systems)",
+        "Contact tree updated quarterly",
+        "Alternate work locations identified"
+      ]
+    },
+    {
+      "heading": "5. Testing",
+      "content": "BC/DR plans tested annually. Tabletop exercise minimum; full test recommended."
+    }
+  ]
+}

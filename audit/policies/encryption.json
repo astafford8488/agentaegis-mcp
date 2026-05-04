@@ -1,0 +1,57 @@
+{
+  "metadata": {
+    "policy_type": "encryption",
+    "organization": "AgentAegis",
+    "version": "1.0",
+    "effective_date": "2026-05-04",
+    "next_review_date": "2027-05-04",
+    "owner": "Information Security Team",
+    "applicable_frameworks": [
+      "soc2",
+      "iso27001"
+    ]
+  },
+  "title": "AgentAegis — Encryption Policy",
+  "sections": [
+    {
+      "heading": "1. Purpose",
+      "content": "Define encryption requirements to protect AgentAegis's data confidentiality and integrity."
+    },
+    {
+      "heading": "2. Data at Rest",
+      "sub_items": [
+        "RESTRICTED and CONFIDENTIAL data must be encrypted at rest",
+        "Minimum: AES-256 for symmetric encryption",
+        "Full disk encryption required on all endpoints",
+        "Database encryption (TDE or field-level) for sensitive data"
+      ]
+    },
+    {
+      "heading": "3. Data in Transit",
+      "sub_items": [
+        "TLS 1.2 minimum for all network communications (TLS 1.3 preferred)",
+        "Internal service-to-service: mTLS where feasible",
+        "VPN for remote access to internal networks",
+        "Email encryption for CONFIDENTIAL/RESTRICTED data"
+      ]
+    },
+    {
+      "heading": "4. Key Management",
+      "sub_items": [
+        "Encryption keys stored in dedicated key management system (KMS)",
+        "Key rotation: annually minimum, immediately if compromised",
+        "Key access logged and audited",
+        "Separation of duties between key custodians"
+      ]
+    },
+    {
+      "heading": "5. Prohibited",
+      "sub_items": [
+        "No custom/proprietary encryption algorithms",
+        "No deprecated algorithms (DES, 3DES, RC4, MD5 for integrity)",
+        "No hardcoded keys in source code",
+        "No key transmission via unencrypted channels"
+      ]
+    }
+  ]
+}

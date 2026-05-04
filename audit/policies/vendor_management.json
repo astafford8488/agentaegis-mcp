@@ -1,0 +1,51 @@
+{
+  "metadata": {
+    "policy_type": "vendor_management",
+    "organization": "AgentAegis",
+    "version": "1.0",
+    "effective_date": "2026-05-04",
+    "next_review_date": "2027-05-04",
+    "owner": "Information Security Team",
+    "applicable_frameworks": [
+      "soc2",
+      "iso27001"
+    ]
+  },
+  "title": "AgentAegis — Vendor Management Policy",
+  "sections": [
+    {
+      "heading": "1. Purpose",
+      "content": "Establish requirements for assessing and managing the security risks associated with AgentAegis's third-party vendors and service providers."
+    },
+    {
+      "heading": "2. Vendor Classification",
+      "sub_items": [
+        "Critical: Vendors with access to sensitive data or critical systems",
+        "Standard: Vendors with limited access or non-sensitive roles",
+        "Low: Vendors with no data access or system connectivity"
+      ]
+    },
+    {
+      "heading": "3. Assessment Requirements",
+      "sub_items": [
+        "Critical vendors: Annual security assessment, SOC 2 report review, contractual security requirements",
+        "Standard vendors: Security questionnaire review, contractual data protection terms",
+        "Low vendors: Basic due diligence only"
+      ]
+    },
+    {
+      "heading": "4. Contractual Requirements",
+      "sub_items": [
+        "Data processing agreements where applicable",
+        "Security incident notification requirements (24-48 hours)",
+        "Right to audit clause",
+        "Data return/destruction upon contract termination",
+        "Compliance with applicable regulations"
+      ]
+    },
+    {
+      "heading": "5. Ongoing Monitoring",
+      "content": "Critical vendors reviewed annually. Security incidents involving vendors trigger immediate reassessment."
+    }
+  ]
+}

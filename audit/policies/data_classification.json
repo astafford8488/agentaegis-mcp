@@ -1,0 +1,47 @@
+{
+  "metadata": {
+    "policy_type": "data_classification",
+    "organization": "AgentAegis",
+    "version": "1.0",
+    "effective_date": "2026-05-04",
+    "next_review_date": "2027-05-04",
+    "owner": "Information Security Team",
+    "applicable_frameworks": [
+      "soc2",
+      "iso27001"
+    ]
+  },
+  "title": "AgentAegis — Data Classification Policy",
+  "sections": [
+    {
+      "heading": "1. Purpose",
+      "content": "This policy establishes a data classification framework to ensure AgentAegis protects information assets according to their sensitivity and value."
+    },
+    {
+      "heading": "2. Classification Levels",
+      "sub_items": [
+        "PUBLIC: Information intended for public consumption. No restrictions on sharing.",
+        "INTERNAL: Business information not intended for public release. Share only with authorized employees.",
+        "CONFIDENTIAL: Sensitive business information. Access on need-to-know basis. Includes: customer PII, financial records, intellectual property",
+        "RESTRICTED: Highest sensitivity. Includes credentials, encryption keys, and regulated data. Strict access controls required."
+      ]
+    },
+    {
+      "heading": "3. Handling Requirements",
+      "sub_items": [
+        "RESTRICTED: Encrypted at rest and in transit, access logged, no external sharing without legal approval",
+        "CONFIDENTIAL: Encrypted in transit, access controlled, sharing requires management approval",
+        "INTERNAL: Reasonable access controls, no public sharing",
+        "PUBLIC: No special handling required"
+      ]
+    },
+    {
+      "heading": "4. Data Owners",
+      "content": "Each data asset must have a designated owner responsible for classification, access decisions, and periodic review."
+    },
+    {
+      "heading": "5. Retention & Disposal",
+      "content": "Data must be retained per legal/regulatory requirements and securely disposed of when no longer needed. Secure disposal means cryptographic erasure or physical destruction."
+    }
+  ]
+}
