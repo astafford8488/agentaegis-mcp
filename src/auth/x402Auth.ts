@@ -54,27 +54,40 @@ export async function verifyX402Payment(
   requirements: PaymentRequirements
 ): Promise<VerifyResponse> {
   try {
+    const paymentPayload = decodePaymentHeader(paymentHeader);
     const response = await fetch(`${X402_FACILITATOR_URL}/verify`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        paymentPayload: paymentHeader,
+        paymentPayload,
         paymentRequirements: requirements,
       }),
     });
 
+    const text = await response.text();
     if (!response.ok) {
-      return { isValid: false, invalidReason: `Facilitator returned ${response.status}` };
+      console.error("[x402] verify failed:", response.status, text.slice(0, 500));
+      return { isValid: false, invalidReason: `Facilitator ${response.status}: ${text.slice(0, 200)}` };
     }
 
-    const result = await response.json();
+    const result = JSON.parse(text);
     return {
       isValid: !!result.isValid,
       payerAddress: result.payer,
-      invalidReason: result.invalidReason,
+      invalidReason: result.invalidReason || result.invalidMessage,
     };
   } catch (err) {
     return { isValid: false, invalidReason: `Verify failed: ${err}` };
+  }
+}
+
+function decodePaymentHeader(header: string): unknown {
+  // x402-fetch sets X-PAYMENT to base64(JSON(payload)). The facilitator
+  // expects the DECODED object, not the base64 string.
+  try {
+    return JSON.parse(Buffer.from(header, "base64").toString("utf-8"));
+  } catch {
+    try { return JSON.parse(header); } catch { return header; }
   }
 }
 
@@ -83,20 +96,23 @@ export async function settleX402Payment(
   requirements: PaymentRequirements
 ): Promise<{ success: boolean; txHash?: string; error?: string }> {
   try {
+    const paymentPayload = decodePaymentHeader(paymentHeader);
     const response = await fetch(`${X402_FACILITATOR_URL}/settle`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        paymentPayload: paymentHeader,
+        paymentPayload,
         paymentRequirements: requirements,
       }),
     });
 
+    const text = await response.text();
     if (!response.ok) {
-      return { success: false, error: `Settle returned ${response.status}` };
+      console.error("[x402] settle failed:", response.status, text.slice(0, 500));
+      return { success: false, error: `Settle ${response.status}: ${text.slice(0, 200)}` };
     }
 
-    const result = await response.json();
+    const result = JSON.parse(text);
     return { success: !!result.success, txHash: result.transaction };
   } catch (err) {
     return { success: false, error: String(err) };
