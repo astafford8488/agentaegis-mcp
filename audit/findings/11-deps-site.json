@@ -1,0 +1,3 @@
+event: message
+data: {"result":{"content":[{"type":"text","text":"{\n  \"scan_id\": \"dbcaae04-f344-42e5-9535-cc1c26094905\",\n  \"source_type\": \"git_repo\",\n  \"source_ref\": \"https://github.com/astafford8488/agentaegis-site\",\n  \"findings\": [],\n  \"summary\": {\n    \"total_vulnerabilities\": 0,\n    \"critical\": 0,\n    \"high\": 0,\n    \"medium\": 0,\n    \"low\": 0,\n    \"packages_affected\": 0,\n    \"fixable\": 0\n  },\n  \"upgrade_actions\": {},\n  \"immediate_actions\": []\n}"}]},"jsonrpc":"2.0","id":2}
+

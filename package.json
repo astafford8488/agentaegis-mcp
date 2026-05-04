@@ -38,7 +38,12 @@
     "vitest": "^3.0.0"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "axios@<1.15.0": ">=1.15.0"
+    }
   },
   "license": "MIT"
 }

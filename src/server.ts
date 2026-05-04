@@ -38,16 +38,87 @@ import { help, helpSchema } from "./tools/account/help.js";
 
 // Middleware
 import { verifyPayment } from "./middleware/x402.js";
+import { TOOL_PRICING } from "./types/mcp.js";
+import { getRequestContext } from "./auth/requestContext.js";
+import { chargeApiKey } from "./auth/apiKeyAuth.js";
+import { isDbConfigured } from "./db/client.js";
+import { logUsage } from "./db/usageLog.js";
 
 export interface ServerOptions {
   /** When true, skip payment verification (used by stdio transport in dev mode). */
   skipPayment?: boolean;
-  /** Optional pre-authorized payment from HTTP transport. */
+  /** Optional pre-authorized payment from HTTP transport.
+   *  Note: legacy hook; the standard path now reads request context via AsyncLocalStorage. */
   preAuthorized?: () => Promise<{ authorized: boolean; reason?: string }>;
 }
 
 function wrapTool(toolName: string, handler: (args: any) => Promise<any>, options: ServerOptions) {
   return async (args: any) => {
+    const price = TOOL_PRICING[toolName] ?? 0;
+
+    // Free tools (account_balance, help) bypass billing entirely.
+    if (price === 0) {
+      try {
+        const result = await handler(args);
+        return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (err) {
+        return { content: [{ type: "text" as const, text: JSON.stringify({ error: String(err) }) }], isError: true };
+      }
+    }
+
+    // Paid tools: prefer to read the request context (HTTP transport).
+    // Fall back to the legacy preAuthorized callback or skipPayment for stdio dev mode.
+    const ctx = getRequestContext();
+
+    if (ctx?.apiKey && isDbConfigured()) {
+      // HTTP path with valid API key — charge the customer's monthly budget.
+      const apiKey = ctx.apiKey;
+
+      // Run the tool; only charge on success.
+      try {
+        const result = await handler(args);
+        const target = (args && (args.target || args.target_url || args.hostname || args.domain)) || undefined;
+
+        const charge = await chargeApiKey(apiKey, toolName, price, {
+          target,
+          success: true,
+          ip: ctx.ip,
+          ua: ctx.userAgent,
+        });
+
+        if (!charge.ok) {
+          // Budget exceeded after the call ran — surface the error but still
+          // return the result. Better UX than silently failing post-hoc.
+          return {
+            content: [{ type: "text" as const, text: JSON.stringify({
+              warning: charge.reason,
+              monthly_limit_exceeded: true,
+              result,
+            }, null, 2) }],
+          };
+        }
+
+        return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (err) {
+        // Failed call — log usage with success=false but don't deduct.
+        await logUsage({
+          customer_id: apiKey.customer_id,
+          api_key_id: apiKey.id,
+          tool_name: toolName,
+          target: undefined,
+          price_usd: price,
+          paid_via: "api_key_balance",
+          success: false,
+          error_message: String(err).slice(0, 500),
+          request_ip: ctx.ip,
+          user_agent: ctx.userAgent,
+        }).catch(() => { /* best-effort */ });
+
+        return { content: [{ type: "text" as const, text: JSON.stringify({ error: String(err) }) }], isError: true };
+      }
+    }
+
+    // Legacy / stdio paths.
     if (options.preAuthorized) {
       const result = await options.preAuthorized();
       if (!result.authorized) {

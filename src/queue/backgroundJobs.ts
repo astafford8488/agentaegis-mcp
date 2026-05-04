@@ -126,7 +126,7 @@ async function runJobInBackground<TOutput>(
         target: job.target,
         duration_ms: duration,
         result,
-      }).catch((err) => console.error(`[bg-jobs] webhook delivery failed for job ${job.id}:`, err));
+      }).catch((err) => console.error("[bg-jobs] webhook delivery failed for job %s: %s", job.id, err));
     }
   } catch (err) {
     const duration = Date.now() - startTime;

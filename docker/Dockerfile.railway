@@ -48,6 +48,14 @@ RUN mkdir -p /tmp/aegis-scans && chmod 777 /tmp/aegis-scans
 # Cleanup
 RUN rm -rf node_modules/.cache
 
+# Drop privileges — run as a non-root user (CWE-250 hardening).
+# nmap may require NET_RAW capability; Railway grants this in the docker-compose
+# capabilities config, so non-root works.
+RUN groupadd -r aegis && useradd -r -g aegis -d /app -s /sbin/nologin aegis \
+    && chown -R aegis:aegis /app /tmp/aegis-scans
+
+USER aegis
+
 EXPOSE 3000
 
 ENV NODE_ENV=production

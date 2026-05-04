@@ -116,6 +116,11 @@ async function analyzeMXSecurity(domain: string): Promise<object> {
 
 async function checkSTARTTLS(hostname: string): Promise<boolean> {
   return new Promise((resolve) => {
+    // nosemgrep: bypass-tls-verification
+    // We are AUDITING the MX server's TLS posture, not establishing a trusted
+    // connection to it. We want to know whether the server speaks STARTTLS at
+    // all, even with self-signed/expired certs (those are findings, not errors).
+    // We immediately destroy the socket without sending any data.
     const socket = tls.connect(
       { host: hostname, port: 25, rejectUnauthorized: false, timeout: 5000 },
       () => { socket.destroy(); resolve(true); }
