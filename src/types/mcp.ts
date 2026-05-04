@@ -24,4 +24,7 @@ export const TOOL_PRICING: Record<string, number> = {
   access_review: 0.50,
   mfa_audit: 0.25,
   credential_check: 0.50,
+
+  // Free utility tools (always 0)
+  account_balance: 0,
 };

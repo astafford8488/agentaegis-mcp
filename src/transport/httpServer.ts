@@ -18,6 +18,7 @@ import {
   parseCheckoutCompleted,
 } from "../payments/stripe.js";
 import { buildAdminRouter } from "./adminRoutes.js";
+import { runWithContext } from "../auth/requestContext.js";
 
 export function buildHttpApp(buildServer: () => McpServer): Express {
   const app = express();
@@ -152,6 +153,65 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
     }
   });
 
+  // Account snapshot — balance, monthly usage, key info.
+  // Auth: API key belonging to that customer. Designed to be the one call
+  // an agent (or human dashboard) makes to know "where do I stand?"
+  app.get("/v1/customers/:customerId/balance", apiKeyAuth, async (req: AuthenticatedRequest, res: Response) => {
+    if (!isDbConfigured()) return res.status(503).json({ error: "Database not configured" });
+
+    const customerId = req.params.customerId as string;
+    if (req.apiKey?.customer_id !== customerId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    try {
+      const { data: customer, error } = await getDb()
+        .from("aegis_customers")
+        .select("id, email, prepaid_balance_usd, created_at")
+        .eq("id", customerId)
+        .maybeSingle();
+
+      if (error || !customer) return res.status(404).json({ error: "Customer not found" });
+
+      const monthStart = new Date();
+      monthStart.setUTCDate(1);
+      monthStart.setUTCHours(0, 0, 0, 0);
+      const monthUsage = await getCustomerUsage(customerId, monthStart.toISOString());
+
+      const balance = parseFloat(customer.prepaid_balance_usd as any);
+      const monthlyLimit = parseFloat(req.apiKey.monthly_limit_usd as any);
+      const monthlyUsage = parseFloat(req.apiKey.current_month_usage_usd as any);
+
+      // Affordability hint: how many of each tool the customer can still afford
+      const TOOL_PRICING = (await import("../types/mcp.js")).TOOL_PRICING;
+      const paidPrices = Object.values(TOOL_PRICING).filter((p) => p > 0);
+      const cheapestTool = paidPrices.length > 0 ? Math.min(...paidPrices) : 0;
+      const callsRemaining = balance > 0 && cheapestTool > 0 ? Math.floor(balance / cheapestTool) : 0;
+
+      res.json({
+        customer_id: customer.id,
+        email: customer.email,
+        prepaid_balance_usd: balance,
+        api_key: {
+          id: req.apiKey.id,
+          name: req.apiKey.name,
+          monthly_limit_usd: monthlyLimit,
+          current_month_usage_usd: monthlyUsage,
+          monthly_remaining_usd: Math.max(0, monthlyLimit - monthlyUsage),
+        },
+        usage_this_month: monthUsage,
+        affordability: {
+          cheapest_tool_price_usd: cheapestTool,
+          remaining_cheapest_tool_calls: callsRemaining,
+          balance_low_warning: balance < 1.0,
+        },
+        topup_url_template: `/v1/customers/${customer.id}/checkout-session`,
+      });
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
   // Customer usage stats
   app.get("/v1/customers/:customerId/usage", apiKeyAuth, async (req: AuthenticatedRequest, res: Response) => {
     if (!isDbConfigured()) return res.status(503).json({ error: "Database not configured" });
@@ -277,7 +337,17 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
           authorizeToolCall(req, res, toolName, target),
       };
 
-      await transport.handleRequest(req, res, req.body);
+      // Run the entire request inside an AsyncLocalStorage context so tool
+      // handlers can read the api key/customer without explicit threading.
+      await runWithContext(
+        {
+          apiKey: req.apiKey,
+          authMethod: req.authMethod,
+          ip: req.ip,
+          userAgent: req.headers["user-agent"],
+        },
+        () => transport.handleRequest(req, res, req.body)
+      );
     } catch (err) {
       console.error("MCP request error:", err);
       if (!res.headersSent) {

@@ -32,6 +32,9 @@ import { mfaAudit, mfaAuditSchema } from "./tools/identity/mfaAudit.js";
 // Offensive tools
 import { credentialCheck, credentialCheckSchema } from "./tools/offensive/credentialCheck.js";
 
+// Account tools (free for the agent — needed to manage budget)
+import { accountBalance, accountBalanceSchema } from "./tools/account/accountBalance.js";
+
 // Middleware
 import { verifyPayment } from "./middleware/x402.js";
 
@@ -102,6 +105,15 @@ export function buildMcpServer(options: ServerOptions = {}): McpServer {
 
   // Offensive
   server.tool("credential_check", "Check email/domain in breach databases (HIBP).", credentialCheckSchema.shape, wrapTool("credential_check", credentialCheck, options));
+
+  // Account — free tool so agents can self-check budget before paid calls.
+  // Bypasses payment gating entirely (skipPayment for this one regardless of options).
+  server.tool(
+    "account_balance",
+    "Returns the calling API key's prepaid balance, monthly limit, current month usage, and a breakdown of how many of each tool the customer can still afford. Free to call.",
+    accountBalanceSchema.shape,
+    wrapTool("account_balance", accountBalance, { skipPayment: true })
+  );
 
   return server;
 }
