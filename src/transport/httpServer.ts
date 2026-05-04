@@ -90,7 +90,7 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
   app.get("/health", (_req, res) => {
     res.json({
       status: "ok",
-      version: "0.2.0",
+      version: "0.3.0",
       tools_count: Object.keys(TOOL_PRICING).length,
       db_configured: isDbConfigured(),
       timestamp: new Date().toISOString(),
