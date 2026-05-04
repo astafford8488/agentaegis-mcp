@@ -2,9 +2,8 @@ import { z } from "zod";
 import { validateTarget, targetSchema } from "../../utils/sanitize.js";
 import { checkRateLimit, acquireScanSlot, releaseScanSlot } from "../../utils/rateLimit.js";
 import { logScanTarget } from "../../queue/scanQueue.js";
+import { enqueue, shouldRunAsync } from "../../queue/backgroundJobs.js";
 import { runNmapScan, nmapResultToFindings } from "../../engines/nmap.js";
-import { lookupCVE } from "../../apis/nvd.js";
-import { cvssToSeverity } from "../../utils/scoring.js";
 import type { Finding } from "../../types/security.js";
 import { v4 as uuidv4 } from "uuid";
 
@@ -12,11 +11,27 @@ export const vulnScanNetworkSchema = z.object({
   target: targetSchema,
   scan_type: z.enum(["quick", "standard", "deep"]),
   port_range: z.string().optional(),
+  async: z.boolean().optional(),
 });
 
 export type VulnScanNetworkInput = z.infer<typeof vulnScanNetworkSchema>;
 
 export async function vulnScanNetwork(input: VulnScanNetworkInput) {
+  // If the caller wants async (or env defaults to async for this tool),
+  // enqueue and return a job_id immediately. Client polls /v1/jobs/:id.
+  if (shouldRunAsync("vuln_scan_network", input as Record<string, unknown>)) {
+    return enqueue(
+      "vuln_scan_network",
+      input as Record<string, unknown>,
+      () => runVulnScanNetworkSync(input),
+      { emit_webhook: true, timeout_ms: 600_000 }
+    );
+  }
+
+  return runVulnScanNetworkSync(input);
+}
+
+async function runVulnScanNetworkSync(input: VulnScanNetworkInput) {
   const { target, scan_type, port_range } = input;
 
   // Validate target

@@ -1,0 +1,145 @@
+{
+  "framework": "pci_dss",
+  "version": "4.0",
+  "scope": "Cardholder data environment (CDE) — any system that stores, processes, or transmits cardholder data",
+  "requirements": [
+    {
+      "id": "1",
+      "title": "Install and Maintain Network Security Controls",
+      "summary": "Network security controls (firewalls, routers, etc.) protect the CDE.",
+      "controls": [
+        { "id": "1.2.1", "title": "Configuration standards for NSCs", "description": "Defined and reviewed at least once every 12 months.", "evidence_types": ["nsc_config_standards", "review_records"], "weight": "high" },
+        { "id": "1.2.5", "title": "All allowed services, protocols, and ports identified", "description": "Documented and approved with business justification.", "evidence_types": ["service_inventory", "approval_records"], "weight": "high" },
+        { "id": "1.3.1", "title": "Inbound traffic to CDE restricted", "description": "Only traffic with explicit business justification permitted.", "evidence_types": ["firewall_rules", "ingress_policy"], "weight": "critical" },
+        { "id": "1.3.2", "title": "Outbound traffic from CDE restricted", "description": "Only traffic with explicit business justification permitted.", "evidence_types": ["firewall_rules", "egress_policy"], "weight": "critical" },
+        { "id": "1.4.1", "title": "NSCs implemented between trusted and untrusted networks", "description": "Including between the CDE and any other network.", "evidence_types": ["network_diagram", "segmentation_evidence"], "weight": "critical" }
+      ]
+    },
+    {
+      "id": "2",
+      "title": "Apply Secure Configurations",
+      "summary": "All system components must have secure configurations and not use vendor-default credentials.",
+      "controls": [
+        { "id": "2.2.1", "title": "Configuration standards developed and maintained", "description": "Address all known security vulnerabilities, consistent with industry-accepted hardening standards.", "evidence_types": ["hardening_standards", "review_records"], "weight": "high" },
+        { "id": "2.2.2", "title": "Vendor default accounts and removed/disabled", "description": "Accounts and passwords managed before installation on the network.", "evidence_types": ["account_inventory", "password_policy"], "weight": "critical" },
+        { "id": "2.3.1", "title": "Wireless vendor defaults changed", "description": "Including encryption keys, passwords, and SNMP community strings.", "evidence_types": ["wireless_config"], "weight": "high" }
+      ]
+    },
+    {
+      "id": "3",
+      "title": "Protect Stored Account Data",
+      "summary": "Account data (PAN, expiration, name, CVV) must be protected per requirements 3.1–3.7.",
+      "controls": [
+        { "id": "3.2.1", "title": "Account data storage minimized", "description": "Retained only as long as necessary, with documented data retention and disposal.", "evidence_types": ["retention_policy", "disposal_records"], "weight": "critical" },
+        { "id": "3.3.1", "title": "Sensitive authentication data not stored after authorization", "description": "Even if encrypted. Includes full track data, CAV2/CVC2/CVV2/CID, PINs/PIN blocks.", "evidence_types": ["data_inventory", "tokenization_implementation"], "weight": "critical" },
+        { "id": "3.4.1", "title": "PAN masked when displayed", "description": "Maximum first six and last four digits displayable.", "evidence_types": ["display_implementation"], "weight": "critical" },
+        { "id": "3.5.1", "title": "PAN rendered unreadable wherever stored", "description": "Via approaches: one-way hashing, truncation, tokenization, strong cryptography with key management.", "evidence_types": ["encryption_implementation", "tokenization_setup"], "weight": "critical" },
+        { "id": "3.6.1", "title": "Cryptographic keys protected", "description": "Documented procedures for cryptographic key management.", "evidence_types": ["key_management_policy", "kms_config"], "weight": "critical" },
+        { "id": "3.7.1", "title": "Key management procedures defined", "description": "Including generation, distribution, storage, rotation, retirement.", "evidence_types": ["key_management_procedures"], "weight": "high" }
+      ]
+    },
+    {
+      "id": "4",
+      "title": "Protect Cardholder Data with Strong Cryptography During Transmission",
+      "summary": "Cardholder data transmitted over open, public networks must use strong cryptography.",
+      "controls": [
+        { "id": "4.2.1", "title": "Strong cryptography and security protocols implemented", "description": "TLS 1.2 or higher. SSL and early TLS prohibited.", "evidence_types": ["tls_config", "cipher_suite_inventory"], "weight": "critical" },
+        { "id": "4.2.1.1", "title": "Inventory of trusted keys and certificates", "description": "Maintained and reviewed annually.", "evidence_types": ["cert_inventory", "review_records"], "weight": "high" }
+      ]
+    },
+    {
+      "id": "5",
+      "title": "Protect All Systems and Networks from Malicious Software",
+      "summary": "Anti-malware solutions deployed on all in-scope systems.",
+      "controls": [
+        { "id": "5.2.1", "title": "Anti-malware deployed on all relevant systems", "description": "Either on-host or via continuous behavioral analysis on all systems.", "evidence_types": ["edr_config", "deployment_records"], "weight": "critical" },
+        { "id": "5.2.3", "title": "Periodic scans, active scanning, real-time scanning", "description": "Or continuous behavioral analysis active.", "evidence_types": ["scan_config", "scan_results"], "weight": "high" },
+        { "id": "5.3.5", "title": "Anti-malware cannot be disabled by users", "description": "Or altered without administrative authorization.", "evidence_types": ["policy_enforcement"], "weight": "high" }
+      ]
+    },
+    {
+      "id": "6",
+      "title": "Develop and Maintain Secure Systems and Software",
+      "summary": "Security controls must be embedded in software development.",
+      "controls": [
+        { "id": "6.2.1", "title": "Bespoke software developed securely", "description": "With documented secure development standards.", "evidence_types": ["sdlc_documentation", "training_records"], "weight": "high" },
+        { "id": "6.2.4", "title": "Software engineers trained at least annually", "description": "On software security relevant to their role.", "evidence_types": ["training_records"], "weight": "medium" },
+        { "id": "6.3.1", "title": "Security vulnerabilities identified and addressed", "description": "Including via vulnerability scanning, threat intel, etc.", "evidence_types": ["vuln_management_program", "scan_results"], "weight": "critical" },
+        { "id": "6.3.3", "title": "All system components protected from known vulnerabilities", "description": "Vendor patches installed within one month of release for critical/high.", "evidence_types": ["patch_management", "patching_records"], "weight": "critical" },
+        { "id": "6.4.1", "title": "Public-facing web applications protected", "description": "Either: reviewed annually + after changes, OR automated technical solution detecting attacks.", "evidence_types": ["pentest_records", "waf_config"], "weight": "critical" },
+        { "id": "6.4.3", "title": "Payment page scripts managed", "description": "Authorized scripts only on payment page; integrity controls implemented.", "evidence_types": ["script_inventory", "csp_config"], "weight": "critical" }
+      ]
+    },
+    {
+      "id": "7",
+      "title": "Restrict Access by Need-to-Know",
+      "summary": "Access to system components and data must be appropriately restricted.",
+      "controls": [
+        { "id": "7.2.1", "title": "Access control policy defines least-privilege model", "description": "Based on job responsibilities and need-to-know.", "evidence_types": ["access_control_policy", "role_definitions"], "weight": "critical" },
+        { "id": "7.2.2", "title": "Access assigned to users based on classification and function", "description": "Roles assigned with documented approval.", "evidence_types": ["rbac_matrix", "approval_records"], "weight": "high" },
+        { "id": "7.2.4", "title": "User access reviews performed at least every 6 months", "description": "All accounts reviewed including service accounts.", "evidence_types": ["access_review_records"], "weight": "high" }
+      ]
+    },
+    {
+      "id": "8",
+      "title": "Identify Users and Authenticate Access",
+      "summary": "All access to system components must be properly authenticated.",
+      "controls": [
+        { "id": "8.2.1", "title": "Unique IDs assigned to each user", "description": "Before access to system components or cardholder data is granted.", "evidence_types": ["account_inventory"], "weight": "critical" },
+        { "id": "8.3.1", "title": "Access authenticated via at least one factor", "description": "Something you know, have, or are.", "evidence_types": ["authentication_config"], "weight": "critical" },
+        { "id": "8.3.6", "title": "Password requirements: minimum length 12+, complexity", "description": "Includes both numeric and alphabetic.", "evidence_types": ["password_policy"], "weight": "high" },
+        { "id": "8.4.2", "title": "MFA implemented for all access into the CDE", "description": "From any source: console, network, remote.", "evidence_types": ["mfa_config", "mfa_enforcement"], "weight": "critical" },
+        { "id": "8.4.3", "title": "MFA for all remote access", "description": "Originating from outside the entity's network.", "evidence_types": ["vpn_mfa_config"], "weight": "critical" },
+        { "id": "8.5.1", "title": "MFA implementations not bypassable", "description": "Except documented exceptions for service accounts.", "evidence_types": ["mfa_bypass_audit"], "weight": "high" }
+      ]
+    },
+    {
+      "id": "9",
+      "title": "Restrict Physical Access to Cardholder Data",
+      "summary": "Physical access to systems and media containing cardholder data must be restricted.",
+      "controls": [
+        { "id": "9.2.1", "title": "Physical security controls in place to limit access", "description": "Both for facilities and individual rooms with sensitive areas.", "evidence_types": ["physical_security_assessment"], "weight": "high" },
+        { "id": "9.4.1", "title": "Media classified according to data sensitivity", "description": "Inventory maintained.", "evidence_types": ["media_inventory"], "weight": "medium" },
+        { "id": "9.4.5", "title": "Inventory logs of all electronic media", "description": "Reconciled at least annually.", "evidence_types": ["media_logs"], "weight": "low" }
+      ]
+    },
+    {
+      "id": "10",
+      "title": "Log and Monitor All Access",
+      "summary": "Audit logs are critical for detecting and responding to security incidents.",
+      "controls": [
+        { "id": "10.2.1", "title": "Audit logs enabled and active for all system components", "description": "Track and link all access to system components by individual user.", "evidence_types": ["log_config", "siem_inventory"], "weight": "critical" },
+        { "id": "10.2.2", "title": "Logs record specific events", "description": "User identification, event type, date/time, success/failure indication, origin, identity/name of affected data/component.", "evidence_types": ["log_schema", "sample_logs"], "weight": "critical" },
+        { "id": "10.4.1", "title": "Audit logs reviewed at least daily", "description": "All security events, logs of system components storing/processing cardholder data, logs of critical security functions.", "evidence_types": ["log_review_procedures", "review_records"], "weight": "critical" },
+        { "id": "10.5.1", "title": "Audit log history retained at least 12 months", "description": "Last 3 months immediately available for analysis.", "evidence_types": ["retention_config", "retention_policy"], "weight": "high" }
+      ]
+    },
+    {
+      "id": "11",
+      "title": "Test Security of Systems and Networks",
+      "summary": "Vulnerabilities must be regularly identified through testing.",
+      "controls": [
+        { "id": "11.3.1", "title": "Internal vulnerability scans quarterly", "description": "Plus after any significant change.", "evidence_types": ["scan_records", "remediation_records"], "weight": "critical" },
+        { "id": "11.3.2", "title": "External vulnerability scans quarterly", "description": "Performed by ASV (Approved Scanning Vendor).", "evidence_types": ["asv_scan_records"], "weight": "critical" },
+        { "id": "11.4.1", "title": "Penetration testing performed at least annually", "description": "Plus after any significant change.", "evidence_types": ["pentest_reports"], "weight": "critical" },
+        { "id": "11.4.3", "title": "External pentest performed annually", "description": "From outside the network attacking inward.", "evidence_types": ["pentest_reports"], "weight": "critical" },
+        { "id": "11.4.5", "title": "Internal pentest performed annually", "description": "Validates segmentation effectiveness if used to reduce CDE scope.", "evidence_types": ["pentest_reports", "segmentation_validation"], "weight": "critical" },
+        { "id": "11.5.1", "title": "Intrusion detection and/or prevention deployed", "description": "All traffic at the perimeter and at critical points within the CDE.", "evidence_types": ["ids_ips_config"], "weight": "high" }
+      ]
+    },
+    {
+      "id": "12",
+      "title": "Support Information Security with Organizational Policies and Programs",
+      "summary": "Maintain a comprehensive information security program.",
+      "controls": [
+        { "id": "12.1.1", "title": "Overall security policy established and disseminated", "description": "Reviewed at least annually and updated as needed.", "evidence_types": ["security_policy", "review_records"], "weight": "critical" },
+        { "id": "12.3.1", "title": "Risk assessment process formally defined", "description": "Performed at least annually and upon significant changes.", "evidence_types": ["risk_assessment_process", "assessment_records"], "weight": "critical" },
+        { "id": "12.3.3", "title": "Cryptographic cipher suites and protocols inventoried", "description": "Reviewed annually.", "evidence_types": ["crypto_inventory"], "weight": "high" },
+        { "id": "12.5.1", "title": "Inventory of system components in scope for PCI DSS", "description": "Including their function and PCI DSS scope.", "evidence_types": ["asset_inventory"], "weight": "critical" },
+        { "id": "12.6.1", "title": "Security awareness program implemented", "description": "All personnel made aware of importance of security and cardholder data protection.", "evidence_types": ["training_program", "training_records"], "weight": "high" },
+        { "id": "12.8.1", "title": "List of TPSPs maintained", "description": "Third-party service providers with which cardholder data is shared.", "evidence_types": ["tpsp_inventory", "responsibility_matrix"], "weight": "high" },
+        { "id": "12.10.1", "title": "Incident response plan exists and is tested", "description": "Reviewed at least annually.", "evidence_types": ["incident_response_plan", "test_records"], "weight": "critical" }
+      ]
+    }
+  ]
+}

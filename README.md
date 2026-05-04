@@ -155,7 +155,7 @@ curl -X POST https://api.agentaegis.org/v1/customers/<id>/api-keys \
 - **ISO 27001:2022** — All 4 Annex A control groups (93 controls)
 - **HIPAA Security Rule** — Administrative, physical, and technical safeguards (43 controls)
 - **NIST CSF 2.0** — All 6 functions with categories
-- **PCI DSS v4.0** — Structure ready, controls being populated
+- **PCI DSS v4.0** — All 12 requirements with detailed controls (full evaluation logic)
 
 ## Development
 

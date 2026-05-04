@@ -1,6 +1,6 @@
 {
   "name": "agentaegis-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MCP server for cybersecurity operations — compliance, vuln scans, code security, threat intel. Pay-per-use via x402 or API key.",
   "type": "module",
   "main": "dist/index.js",

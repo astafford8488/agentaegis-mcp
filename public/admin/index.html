@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgentAegis Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0e1a;
+      --bg-alt: #0f1422;
+      --bg-card: #141a2e;
+      --border: #1f2940;
+      --text: #e4e8f1;
+      --text-muted: #8a93a8;
+      --text-dim: #5a6480;
+      --primary: #5b8def;
+      --accent: #00d4a8;
+      --warn: #ffb547;
+      --crit: #ff6464;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 32px 24px; }
+    code, .mono { font-family: 'JetBrains Mono', monospace; }
+    h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+    h2 { font-size: 16px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 32px 0 12px; }
+    .container { max-width: 1180px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .header .meta { color: var(--text-muted); font-size: 13px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 16px; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+    .card-label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+    .card-value { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+    .card-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .card.ok .card-value { color: var(--accent); }
+    .card.warn .card-value { color: var(--warn); }
+    .card.crit .card-value { color: var(--crit); }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; background: var(--bg-card); border-radius: 10px; overflow: hidden; }
+    th { text-align: left; color: var(--text-muted); font-weight: 600; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge.crit { background: rgba(255,100,100,0.15); color: var(--crit); }
+    .badge.warn { background: rgba(255,181,71,0.15); color: var(--warn); }
+    .badge.ok { background: rgba(0,212,168,0.15); color: var(--accent); }
+    .empty { color: var(--text-dim); text-align: center; padding: 24px; }
+    .err-msg { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--crit); }
+    .refresh { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 12px; }
+    .refresh:hover { border-color: var(--primary); color: var(--text); }
+    .loading { color: var(--text-dim); padding: 16px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>AgentAegis Admin</h1>
+      <div class="meta">Operator dashboard · <span id="last-updated">never</span></div>
+    </div>
+    <button class="refresh" onclick="loadAll()">↻ Refresh</button>
+  </div>
+
+  <h2>Overview</h2>
+  <div class="grid" id="overview"><div class="loading">Loading...</div></div>
+
+  <h2>Last 30 days</h2>
+  <div class="grid" id="overview-30d"><div class="loading">Loading...</div></div>
+
+  <h2>Top customers · 30 days</h2>
+  <div id="customers"><div class="loading">Loading...</div></div>
+
+  <h2>Top tools · 30 days</h2>
+  <div id="tools"><div class="loading">Loading...</div></div>
+
+  <h2>Recent failures · 7 days</h2>
+  <div id="errors"><div class="loading">Loading...</div></div>
+</div>
+
+<script>
+  // Capture token from URL once and reuse for API calls
+  const token = new URLSearchParams(location.search).get("token") || "";
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+  async function fetchJson(url) {
+    const r = await fetch(url, { headers });
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return r.json();
+  }
+
+  function fmt(n, opts = {}) {
+    if (n == null) return "—";
+    if (opts.money) return "$" + Number(n).toFixed(2);
+    return Number(n).toLocaleString();
+  }
+
+  function card(label, value, sub, klass = "") {
+    return `<div class="card ${klass}"><div class="card-label">${label}</div><div class="card-value">${value}</div>${sub ? `<div class="card-sub">${sub}</div>` : ""}</div>`;
+  }
+
+  async function loadOverview() {
+    try {
+      const data = await fetchJson("/admin/stats/overview");
+      document.getElementById("overview").innerHTML = [
+        card("Customers", fmt(data.customer_count)),
+        card("Active API keys", fmt(data.active_api_keys)),
+        card("Total prepaid balance", fmt(data.prepaid_balance_total_usd, { money: true }), "across all customers", "ok"),
+      ].join("");
+
+      const d = data.last_30_days;
+      document.getElementById("overview-30d").innerHTML = [
+        card("Tool calls", fmt(d.tool_calls_succeeded)),
+        card("Revenue", fmt(d.revenue_usd, { money: true }), null, "ok"),
+        card("Credits purchased", fmt(d.credits_purchased_usd, { money: true })),
+        card("Jobs completed", fmt(d.jobs_completed)),
+        card("Jobs failed", fmt(d.jobs_failed), null, d.jobs_failed > 0 ? "crit" : ""),
+        card("Jobs running", fmt(d.jobs_running)),
+      ].join("");
+    } catch (err) {
+      document.getElementById("overview").innerHTML = `<div class="empty err-msg">${err.message}</div>`;
+    }
+  }
+
+  async function loadCustomers() {
+    try {
+      const data = await fetchJson("/admin/stats/customers");
+      if (!data.top_customers?.length) {
+        document.getElementById("customers").innerHTML = '<div class="empty">No paying customers yet.</div>';
+        return;
+      }
+      const rows = data.top_customers.map(c => `<tr>
+        <td><strong>${c.email || "—"}</strong>${c.company ? `<br/><span style="color:var(--text-muted);font-size:12px">${c.company}</span>` : ""}</td>
+        <td>${fmt(c.spend_30d_usd, { money: true })}</td>
+        <td>${fmt(c.calls_30d)}</td>
+        <td>${fmt(c.prepaid_balance_usd, { money: true })}</td>
+        <td><span style="color:var(--text-muted);font-size:11px">${(c.tools_used || []).slice(0,3).join(", ") + (c.tools_used?.length > 3 ? ` +${c.tools_used.length-3}` : "")}</span></td>
+      </tr>`).join("");
+      document.getElementById("customers").innerHTML = `<table>
+        <thead><tr><th>Customer</th><th>Spend</th><th>Calls</th><th>Balance</th><th>Top tools</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    } catch (err) {
+      document.getElementById("customers").innerHTML = `<div class="empty err-msg">${err.message}</div>`;
+    }
+  }
+
+  async function loadTools() {
+    try {
+      const data = await fetchJson("/admin/stats/tools");
+      if (!data.tools?.length) {
+        document.getElementById("tools").innerHTML = '<div class="empty">No tool calls yet.</div>';
+        return;
+      }
+      const rows = data.tools.map(t => `<tr>
+        <td class="mono">${t.tool_name}</td>
+        <td>${fmt(t.calls)}</td>
+        <td>${fmt(t.revenue_usd, { money: true })}</td>
+        <td>${t.failures > 0 ? `<span class="badge crit">${t.failures}</span>` : "0"}</td>
+      </tr>`).join("");
+      document.getElementById("tools").innerHTML = `<table>
+        <thead><tr><th>Tool</th><th>Calls</th><th>Revenue</th><th>Failures</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    } catch (err) {
+      document.getElementById("tools").innerHTML = `<div class="empty err-msg">${err.message}</div>`;
+    }
+  }
+
+  async function loadErrors() {
+    try {
+      const data = await fetchJson("/admin/stats/errors");
+      const total = (data.failed_jobs?.length || 0) + (data.failed_calls?.length || 0);
+      if (total === 0) {
+        document.getElementById("errors").innerHTML = '<div class="empty" style="color:var(--accent)">✓ No failures in the last 7 days</div>';
+        return;
+      }
+      const rows = [
+        ...((data.failed_jobs || []).map(j => `<tr>
+          <td><span class="badge crit">JOB</span></td>
+          <td class="mono">${j.tool_name}</td>
+          <td class="mono" style="color:var(--text-muted)">${j.target || "—"}</td>
+          <td class="err-msg">${(j.error_message || "—").slice(0, 100)}</td>
+          <td style="color:var(--text-muted);font-size:11px">${new Date(j.created_at).toLocaleString()}</td>
+        </tr>`)),
+        ...((data.failed_calls || []).map(j => `<tr>
+          <td><span class="badge warn">CALL</span></td>
+          <td class="mono">${j.tool_name}</td>
+          <td class="mono" style="color:var(--text-muted)">${j.target || "—"}</td>
+          <td class="err-msg">${(j.error_message || "—").slice(0, 100)}</td>
+          <td style="color:var(--text-muted);font-size:11px">${new Date(j.created_at).toLocaleString()}</td>
+        </tr>`)),
+      ].join("");
+      document.getElementById("errors").innerHTML = `<table>
+        <thead><tr><th>Type</th><th>Tool</th><th>Target</th><th>Error</th><th>When</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    } catch (err) {
+      document.getElementById("errors").innerHTML = `<div class="empty err-msg">${err.message}</div>`;
+    }
+  }
+
+  function loadAll() {
+    document.getElementById("last-updated").textContent = new Date().toLocaleTimeString();
+    loadOverview();
+    loadCustomers();
+    loadTools();
+    loadErrors();
+  }
+
+  loadAll();
+  // Auto-refresh every 60s
+  setInterval(loadAll, 60_000);
+</script>
+</body>
+</html>

@@ -1,12 +1,27 @@
 import { z } from "zod";
+import { collectGitHubEvidence } from "../../integrations/github.js";
+import { collectAWSEvidence, type AWSCredentials } from "../../integrations/aws.js";
+import { collectOktaEvidence } from "../../integrations/okta.js";
 
 export const evidenceCollectSchema = z.object({
   framework: z.enum(["soc2", "iso27001", "hipaa", "pci_dss", "nist_csf"]),
   control_ids: z.array(z.string()),
   integrations: z.object({
-    aws_account_id: z.string().optional(),
+    // GitHub
     github_org: z.string().optional(),
+    github_token: z.string().optional(),
+
+    // AWS — caller can either pass credentials directly OR list an account_id
+    // and rely on the server's IAM role (if configured)
+    aws_account_id: z.string().optional(),
+    aws_access_key_id: z.string().optional(),
+    aws_secret_access_key: z.string().optional(),
+    aws_session_token: z.string().optional(),
+    aws_region: z.string().optional(),
+
+    // Okta
     okta_domain: z.string().optional(),
+    okta_token: z.string().optional(),
   }).optional(),
 });
 
@@ -188,12 +203,65 @@ export async function evidenceCollect(input: EvidenceCollectInput) {
     }
   }
 
-  const integrationStatus = input.integrations ? {
-    aws: input.integrations.aws_account_id ? "configured" : "not_configured",
-    github: input.integrations.github_org ? "configured" : "not_configured",
-    okta: input.integrations.okta_domain ? "configured" : "not_configured",
-    note: "Phase 1: Evidence collection plans are provided. Automated collection via integrations available in Phase 2.",
-  } : { note: "No integrations configured. All evidence collection will be manual." };
+  // Phase 3: actually pull evidence from configured integrations
+  const collectedEvidence: Record<string, unknown> = {};
+  const integrationStatus: Record<string, string> = {};
+  const integrationErrors: string[] = [];
+
+  if (input.integrations) {
+    const i = input.integrations;
+
+    // GitHub
+    if (i.github_org && i.github_token) {
+      try {
+        collectedEvidence.github = await collectGitHubEvidence(i.github_org, i.github_token);
+        integrationStatus.github = "collected";
+      } catch (err) {
+        integrationStatus.github = "error";
+        integrationErrors.push(`github: ${String(err).slice(0, 200)}`);
+      }
+    } else if (i.github_org) {
+      integrationStatus.github = "needs_token (provide github_token with read:org scope)";
+    } else {
+      integrationStatus.github = "not_configured";
+    }
+
+    // AWS
+    if (i.aws_access_key_id && i.aws_secret_access_key) {
+      const creds: AWSCredentials = {
+        access_key_id: i.aws_access_key_id,
+        secret_access_key: i.aws_secret_access_key,
+        session_token: i.aws_session_token,
+        region: i.aws_region,
+      };
+      try {
+        collectedEvidence.aws = await collectAWSEvidence(creds);
+        integrationStatus.aws = "collected";
+      } catch (err) {
+        integrationStatus.aws = "error";
+        integrationErrors.push(`aws: ${String(err).slice(0, 200)}`);
+      }
+    } else if (i.aws_account_id) {
+      integrationStatus.aws = "needs_credentials (provide aws_access_key_id + aws_secret_access_key)";
+    } else {
+      integrationStatus.aws = "not_configured";
+    }
+
+    // Okta
+    if (i.okta_domain && i.okta_token) {
+      try {
+        collectedEvidence.okta = await collectOktaEvidence(i.okta_domain, i.okta_token);
+        integrationStatus.okta = "collected";
+      } catch (err) {
+        integrationStatus.okta = "error";
+        integrationErrors.push(`okta: ${String(err).slice(0, 200)}`);
+      }
+    } else if (i.okta_domain) {
+      integrationStatus.okta = "needs_token (provide okta_token with read scopes)";
+    } else {
+      integrationStatus.okta = "not_configured";
+    }
+  }
 
   return {
     framework: input.framework,
@@ -205,5 +273,7 @@ export async function evidenceCollect(input: EvidenceCollectInput) {
       api_pull: plans.flatMap((p) => p.evidence_items).filter((e) => e.collection_method === "api_pull").length,
     },
     integration_status: integrationStatus,
+    integration_errors: integrationErrors.length > 0 ? integrationErrors : undefined,
+    collected_evidence: Object.keys(collectedEvidence).length > 0 ? collectedEvidence : undefined,
   };
 }

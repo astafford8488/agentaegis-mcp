@@ -2,6 +2,7 @@ import { z } from "zod";
 import { validateUrl, urlSchema } from "../../utils/sanitize.js";
 import { checkRateLimit, acquireScanSlot, releaseScanSlot } from "../../utils/rateLimit.js";
 import { logScanTarget } from "../../queue/scanQueue.js";
+import { enqueue, shouldRunAsync } from "../../queue/backgroundJobs.js";
 import { runNucleiScan } from "../../engines/nuclei.js";
 import { v4 as uuidv4 } from "uuid";
 
@@ -13,11 +14,24 @@ export const vulnScanWebAppSchema = z.object({
     credentials: z.string(),
   }).optional(),
   exclude_paths: z.array(z.string()).optional(),
+  async: z.boolean().optional(),
 });
 
 export type VulnScanWebAppInput = z.infer<typeof vulnScanWebAppSchema>;
 
 export async function vulnScanWebApp(input: VulnScanWebAppInput) {
+  if (shouldRunAsync("vuln_scan_web_app", input as Record<string, unknown>)) {
+    return enqueue(
+      "vuln_scan_web_app",
+      input as Record<string, unknown>,
+      () => runVulnScanWebAppSync(input),
+      { emit_webhook: true, timeout_ms: 600_000 }
+    );
+  }
+  return runVulnScanWebAppSync(input);
+}
+
+async function runVulnScanWebAppSync(input: VulnScanWebAppInput) {
   const { target_url, scan_depth } = input;
 
   const validation = validateUrl(target_url);
