@@ -325,7 +325,8 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
 
       if (requiresPayment && process.env.X402_PAYEE_ADDRESS) {
         const paymentHeader = req.headers["x-payment"] as string | undefined;
-        const requirements = (await import("../auth/x402Auth.js")).buildPaymentRequirements(toolName!, "/mcp");
+        const fullResourceUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+        const requirements = (await import("../auth/x402Auth.js")).buildPaymentRequirements(toolName!, fullResourceUrl);
 
         if (!paymentHeader) {
           // RFC: send 402 with x402 payment requirements
