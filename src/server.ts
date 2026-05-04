@@ -55,12 +55,6 @@ export interface ServerOptions {
 function wrapTool(toolName: string, handler: (args: any) => Promise<any>, options: ServerOptions) {
   return async (args: any) => {
     const price = TOOL_PRICING[toolName] ?? 0;
-    const ctxProbe = getRequestContext();
-    console.log("[wrapTool]", JSON.stringify({
-      tool: toolName, price, has_ctx: !!ctxProbe, has_api_key: !!ctxProbe?.apiKey,
-      api_key_id: ctxProbe?.apiKey?.id || null,
-      db_configured: isDbConfigured(),
-    }));
 
     // Free tools (account_balance, help) bypass billing entirely.
     if (price === 0) {
