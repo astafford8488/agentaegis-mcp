@@ -9,7 +9,7 @@ export async function createScanJob(input: {
   input_params: Record<string, unknown>;
 }): Promise<ScanJob> {
   const { data, error } = await getDb()
-    .from("scan_jobs")
+    .from("aegis_scan_jobs")
     .insert({
       customer_id: input.customer_id || null,
       api_key_id: input.api_key_id || null,
@@ -27,14 +27,14 @@ export async function createScanJob(input: {
 
 export async function markJobRunning(jobId: string): Promise<void> {
   await getDb()
-    .from("scan_jobs")
+    .from("aegis_scan_jobs")
     .update({ status: "running", started_at: new Date().toISOString() })
     .eq("id", jobId);
 }
 
 export async function completeJob(jobId: string, result: unknown, durationMs: number): Promise<void> {
   await getDb()
-    .from("scan_jobs")
+    .from("aegis_scan_jobs")
     .update({
       status: "completed",
       result: result as any,
@@ -46,7 +46,7 @@ export async function completeJob(jobId: string, result: unknown, durationMs: nu
 
 export async function failJob(jobId: string, errorMessage: string, durationMs?: number): Promise<void> {
   await getDb()
-    .from("scan_jobs")
+    .from("aegis_scan_jobs")
     .update({
       status: "failed",
       error_message: errorMessage,
@@ -58,7 +58,7 @@ export async function failJob(jobId: string, errorMessage: string, durationMs?: 
 
 export async function getJob(jobId: string): Promise<ScanJob | null> {
   const { data, error } = await getDb()
-    .from("scan_jobs")
+    .from("aegis_scan_jobs")
     .select("*")
     .eq("id", jobId)
     .maybeSingle();
@@ -69,7 +69,7 @@ export async function getJob(jobId: string): Promise<ScanJob | null> {
 
 export async function listCustomerJobs(customerId: string, limit: number = 50): Promise<ScanJob[]> {
   const { data, error } = await getDb()
-    .from("scan_jobs")
+    .from("aegis_scan_jobs")
     .select("*")
     .eq("customer_id", customerId)
     .order("created_at", { ascending: false })

@@ -24,7 +24,7 @@ export async function dispatchWebhook(
   if (!isDbConfigured()) return;
 
   const { data: webhooks } = await getDb()
-    .from("webhooks")
+    .from("aegis_webhooks")
     .select("*")
     .eq("customer_id", customerId)
     .eq("active", true)
@@ -52,7 +52,7 @@ async function deliverToWebhook(
   const signature = signPayload(body, webhook.secret);
 
   const { data: delivery } = await getDb()
-    .from("webhook_deliveries")
+    .from("aegis_webhook_deliveries")
     .insert({
       webhook_id: webhook.id,
       event_type: eventType,
@@ -80,7 +80,7 @@ async function deliverToWebhook(
 
     if (response.ok) {
       await getDb()
-        .from("webhook_deliveries")
+        .from("aegis_webhook_deliveries")
         .update({
           response_status: response.status,
           response_body: responseText.slice(0, 1000),
@@ -89,7 +89,7 @@ async function deliverToWebhook(
         .eq("id", delivery?.id);
 
       await getDb()
-        .from("webhooks")
+        .from("aegis_webhooks")
         .update({
           last_delivery_at: new Date().toISOString(),
           last_delivery_status: response.status,
@@ -115,7 +115,7 @@ async function scheduleRetry(
 
   if (currentAttempt >= MAX_ATTEMPTS) {
     await getDb()
-      .from("webhook_deliveries")
+      .from("aegis_webhook_deliveries")
       .update({
         response_status: status,
         response_body: body.slice(0, 1000),
@@ -124,7 +124,7 @@ async function scheduleRetry(
       .eq("id", deliveryId);
 
     await getDb()
-      .from("webhooks")
+      .from("aegis_webhooks")
       .update({ failure_count: MAX_ATTEMPTS, last_delivery_status: status })
       .eq("id", webhookId);
     return;
@@ -133,7 +133,7 @@ async function scheduleRetry(
   const nextRetry = new Date(Date.now() + RETRY_BACKOFF_MS[currentAttempt - 1]).toISOString();
 
   await getDb()
-    .from("webhook_deliveries")
+    .from("aegis_webhook_deliveries")
     .update({
       response_status: status,
       response_body: body.slice(0, 1000),

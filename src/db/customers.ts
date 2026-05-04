@@ -3,7 +3,7 @@ import type { Customer } from "./types.js";
 
 export async function findCustomerByEmail(email: string): Promise<Customer | null> {
   const { data, error } = await getDb()
-    .from("customers")
+    .from("aegis_customers")
     .select("*")
     .eq("email", email)
     .maybeSingle();
@@ -14,7 +14,7 @@ export async function findCustomerByEmail(email: string): Promise<Customer | nul
 
 export async function findCustomerByWallet(wallet: string): Promise<Customer | null> {
   const { data, error } = await getDb()
-    .from("customers")
+    .from("aegis_customers")
     .select("*")
     .eq("wallet_address", wallet)
     .maybeSingle();
@@ -30,7 +30,7 @@ export async function createCustomer(input: {
   wallet_address?: string;
 }): Promise<Customer> {
   const { data, error } = await getDb()
-    .from("customers")
+    .from("aegis_customers")
     .insert({
       email: input.email,
       name: input.name || null,
@@ -46,7 +46,7 @@ export async function createCustomer(input: {
 
 export async function deductBalance(customerId: string, amount: number): Promise<boolean> {
   const { data: customer, error: fetchError } = await getDb()
-    .from("customers")
+    .from("aegis_customers")
     .select("prepaid_balance_usd")
     .eq("id", customerId)
     .single();
@@ -55,7 +55,7 @@ export async function deductBalance(customerId: string, amount: number): Promise
   if (customer.prepaid_balance_usd < amount) return false;
 
   const { error } = await getDb()
-    .from("customers")
+    .from("aegis_customers")
     .update({ prepaid_balance_usd: customer.prepaid_balance_usd - amount })
     .eq("id", customerId);
 
@@ -64,7 +64,7 @@ export async function deductBalance(customerId: string, amount: number): Promise
 
 export async function addBalance(customerId: string, amount: number): Promise<void> {
   const { data: customer } = await getDb()
-    .from("customers")
+    .from("aegis_customers")
     .select("prepaid_balance_usd")
     .eq("id", customerId)
     .single();
@@ -72,7 +72,7 @@ export async function addBalance(customerId: string, amount: number): Promise<vo
   if (!customer) throw new Error("Customer not found");
 
   await getDb()
-    .from("customers")
+    .from("aegis_customers")
     .update({ prepaid_balance_usd: customer.prepaid_balance_usd + amount })
     .eq("id", customerId);
 }

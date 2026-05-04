@@ -53,11 +53,11 @@ export function buildAdminRouter(): Router {
       const since30d = new Date(Date.now() - 30 * 86400000).toISOString();
 
       const [customers, apiKeys, usage30d, jobs30d, balances] = await Promise.all([
-        getDb().from("customers").select("id", { count: "exact", head: true }),
-        getDb().from("api_keys").select("id", { count: "exact", head: true }).is("revoked_at", null),
-        getDb().from("usage_log").select("price_usd, paid_via, success").gte("created_at", since30d),
-        getDb().from("scan_jobs").select("status").gte("created_at", since30d),
-        getDb().from("customers").select("prepaid_balance_usd"),
+        getDb().from("aegis_customers").select("id", { count: "exact", head: true }),
+        getDb().from("aegis_api_keys").select("id", { count: "exact", head: true }).is("revoked_at", null),
+        getDb().from("aegis_usage_log").select("price_usd, paid_via, success").gte("created_at", since30d),
+        getDb().from("aegis_scan_jobs").select("status").gte("created_at", since30d),
+        getDb().from("aegis_customers").select("prepaid_balance_usd"),
       ]);
 
       const usage = usage30d.data || [];
@@ -101,7 +101,7 @@ export function buildAdminRouter(): Router {
     try {
       const since30d = new Date(Date.now() - 30 * 86400000).toISOString();
       const { data: usage } = await getDb()
-        .from("usage_log")
+        .from("aegis_usage_log")
         .select("customer_id, tool_name, price_usd, success")
         .gte("created_at", since30d)
         .eq("success", true);
@@ -123,7 +123,7 @@ export function buildAdminRouter(): Router {
         .slice(0, 25);
 
       const { data: customers } = await getDb()
-        .from("customers")
+        .from("aegis_customers")
         .select("id, email, company, prepaid_balance_usd, created_at")
         .in("id", topIds.map((t) => t[0]));
 
@@ -149,7 +149,7 @@ export function buildAdminRouter(): Router {
     try {
       const since30d = new Date(Date.now() - 30 * 86400000).toISOString();
       const { data: usage } = await getDb()
-        .from("usage_log")
+        .from("aegis_usage_log")
         .select("tool_name, price_usd, success")
         .gte("created_at", since30d);
 
@@ -188,14 +188,14 @@ export function buildAdminRouter(): Router {
       const since7d = new Date(Date.now() - 7 * 86400000).toISOString();
       const [failedJobs, failedUsage] = await Promise.all([
         getDb()
-          .from("scan_jobs")
+          .from("aegis_scan_jobs")
           .select("id, customer_id, tool_name, target, error_message, created_at")
           .eq("status", "failed")
           .gte("created_at", since7d)
           .order("created_at", { ascending: false })
           .limit(50),
         getDb()
-          .from("usage_log")
+          .from("aegis_usage_log")
           .select("customer_id, tool_name, target, error_message, created_at")
           .eq("success", false)
           .gte("created_at", since7d)

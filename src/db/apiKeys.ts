@@ -24,7 +24,7 @@ export async function createApiKey(input: {
   const { key, hash, prefix } = generateApiKey();
 
   const { data, error } = await getDb()
-    .from("api_keys")
+    .from("aegis_api_keys")
     .insert({
       customer_id: input.customer_id,
       key_hash: hash,
@@ -43,7 +43,7 @@ export async function findApiKeyByRawKey(rawKey: string): Promise<APIKey | null>
   const hash = hashApiKey(rawKey);
 
   const { data, error } = await getDb()
-    .from("api_keys")
+    .from("aegis_api_keys")
     .select("*")
     .eq("key_hash", hash)
     .is("revoked_at", null)
@@ -55,7 +55,7 @@ export async function findApiKeyByRawKey(rawKey: string): Promise<APIKey | null>
 
 export async function recordApiKeyUsage(apiKeyId: string, amountUsd: number): Promise<void> {
   const { data: key } = await getDb()
-    .from("api_keys")
+    .from("aegis_api_keys")
     .select("current_month_usage_usd")
     .eq("id", apiKeyId)
     .single();
@@ -63,7 +63,7 @@ export async function recordApiKeyUsage(apiKeyId: string, amountUsd: number): Pr
   if (!key) return;
 
   await getDb()
-    .from("api_keys")
+    .from("aegis_api_keys")
     .update({
       current_month_usage_usd: key.current_month_usage_usd + amountUsd,
       last_used_at: new Date().toISOString(),
@@ -77,7 +77,7 @@ export async function checkApiKeyBudget(apiKey: APIKey, amountUsd: number): Prom
 
 export async function revokeApiKey(apiKeyId: string): Promise<void> {
   await getDb()
-    .from("api_keys")
+    .from("aegis_api_keys")
     .update({ revoked_at: new Date().toISOString() })
     .eq("id", apiKeyId);
 }

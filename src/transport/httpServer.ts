@@ -48,7 +48,7 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
     if (isDbConfigured() && event.type === "checkout.session.completed") {
       const eventId = event.id;
       const { data: existing } = await getDb()
-        .from("usage_log")
+        .from("aegis_usage_log")
         .select("id")
         .eq("payment_ref", eventId)
         .maybeSingle();
@@ -191,7 +191,7 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
 
     // Look up the customer to get their email
     const { data: customer, error } = await getDb()
-      .from("customers")
+      .from("aegis_customers")
       .select("email")
       .eq("id", customerId)
       .maybeSingle();

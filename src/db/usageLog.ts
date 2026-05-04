@@ -14,7 +14,7 @@ export async function logUsage(input: {
   request_ip?: string;
   user_agent?: string;
 }): Promise<void> {
-  await getDb().from("usage_log").insert({
+  await getDb().from("aegis_usage_log").insert({
     customer_id: input.customer_id || null,
     api_key_id: input.api_key_id || null,
     tool_name: input.tool_name,
@@ -33,7 +33,7 @@ export async function getCustomerUsage(
   customerId: string,
   fromDate?: string
 ): Promise<{ total_calls: number; total_spend_usd: number; by_tool: Record<string, number> }> {
-  let query = getDb().from("usage_log").select("tool_name, price_usd").eq("customer_id", customerId).eq("success", true);
+  let query = getDb().from("aegis_usage_log").select("tool_name, price_usd").eq("customer_id", customerId).eq("success", true);
 
   if (fromDate) {
     query = query.gte("created_at", fromDate);

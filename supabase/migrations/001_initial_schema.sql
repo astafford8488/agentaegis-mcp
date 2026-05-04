@@ -1,11 +1,10 @@
 -- AgentAegis MCP Server - Initial Schema
--- Tables: customers, api_keys, scan_jobs, usage_log, webhooks, webhook_deliveries
+-- Tables prefixed with `aegis_` to allow co-tenancy in shared Supabase projects.
 
--- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============ CUSTOMERS ============
-CREATE TABLE IF NOT EXISTS customers (
+CREATE TABLE IF NOT EXISTS aegis_customers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT UNIQUE NOT NULL,
     name TEXT,
@@ -18,13 +17,13 @@ CREATE TABLE IF NOT EXISTS customers (
     metadata JSONB DEFAULT '{}'::jsonb
 );
 
-CREATE INDEX idx_customers_email ON customers(email);
-CREATE INDEX idx_customers_wallet ON customers(wallet_address) WHERE wallet_address IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_aegis_customers_email ON aegis_customers(email);
+CREATE INDEX IF NOT EXISTS idx_aegis_customers_wallet ON aegis_customers(wallet_address) WHERE wallet_address IS NOT NULL;
 
 -- ============ API KEYS ============
-CREATE TABLE IF NOT EXISTS api_keys (
+CREATE TABLE IF NOT EXISTS aegis_api_keys (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    customer_id UUID NOT NULL REFERENCES aegis_customers(id) ON DELETE CASCADE,
     key_hash TEXT UNIQUE NOT NULL,
     key_prefix TEXT NOT NULL,
     name TEXT NOT NULL,
@@ -36,14 +35,14 @@ CREATE TABLE IF NOT EXISTS api_keys (
     metadata JSONB DEFAULT '{}'::jsonb
 );
 
-CREATE INDEX idx_api_keys_hash ON api_keys(key_hash) WHERE revoked_at IS NULL;
-CREATE INDEX idx_api_keys_customer ON api_keys(customer_id);
+CREATE INDEX IF NOT EXISTS idx_aegis_api_keys_hash ON aegis_api_keys(key_hash) WHERE revoked_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_aegis_api_keys_customer ON aegis_api_keys(customer_id);
 
 -- ============ SCAN JOBS ============
-CREATE TABLE IF NOT EXISTS scan_jobs (
+CREATE TABLE IF NOT EXISTS aegis_scan_jobs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
-    api_key_id UUID REFERENCES api_keys(id) ON DELETE SET NULL,
+    customer_id UUID REFERENCES aegis_customers(id) ON DELETE SET NULL,
+    api_key_id UUID REFERENCES aegis_api_keys(id) ON DELETE SET NULL,
     tool_name TEXT NOT NULL,
     target TEXT NOT NULL,
     input_params JSONB NOT NULL,
@@ -56,15 +55,15 @@ CREATE TABLE IF NOT EXISTS scan_jobs (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_scan_jobs_customer ON scan_jobs(customer_id);
-CREATE INDEX idx_scan_jobs_status ON scan_jobs(status) WHERE status IN ('queued', 'running');
-CREATE INDEX idx_scan_jobs_created ON scan_jobs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_aegis_scan_jobs_customer ON aegis_scan_jobs(customer_id);
+CREATE INDEX IF NOT EXISTS idx_aegis_scan_jobs_status ON aegis_scan_jobs(status) WHERE status IN ('queued', 'running');
+CREATE INDEX IF NOT EXISTS idx_aegis_scan_jobs_created ON aegis_scan_jobs(created_at DESC);
 
 -- ============ USAGE LOG ============
-CREATE TABLE IF NOT EXISTS usage_log (
+CREATE TABLE IF NOT EXISTS aegis_usage_log (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
-    api_key_id UUID REFERENCES api_keys(id) ON DELETE SET NULL,
+    customer_id UUID REFERENCES aegis_customers(id) ON DELETE SET NULL,
+    api_key_id UUID REFERENCES aegis_api_keys(id) ON DELETE SET NULL,
     tool_name TEXT NOT NULL,
     target TEXT,
     price_usd NUMERIC(10, 4) NOT NULL,
@@ -77,14 +76,14 @@ CREATE TABLE IF NOT EXISTS usage_log (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_usage_log_customer ON usage_log(customer_id, created_at DESC);
-CREATE INDEX idx_usage_log_api_key ON usage_log(api_key_id, created_at DESC);
-CREATE INDEX idx_usage_log_tool ON usage_log(tool_name, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_aegis_usage_log_customer ON aegis_usage_log(customer_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_aegis_usage_log_api_key ON aegis_usage_log(api_key_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_aegis_usage_log_tool ON aegis_usage_log(tool_name, created_at DESC);
 
 -- ============ WEBHOOKS ============
-CREATE TABLE IF NOT EXISTS webhooks (
+CREATE TABLE IF NOT EXISTS aegis_webhooks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    customer_id UUID NOT NULL REFERENCES aegis_customers(id) ON DELETE CASCADE,
     url TEXT NOT NULL,
     secret TEXT NOT NULL,
     events_subscribed TEXT[] NOT NULL DEFAULT ARRAY['scan.completed', 'scan.failed'],
@@ -96,12 +95,12 @@ CREATE TABLE IF NOT EXISTS webhooks (
     metadata JSONB DEFAULT '{}'::jsonb
 );
 
-CREATE INDEX idx_webhooks_customer ON webhooks(customer_id);
+CREATE INDEX IF NOT EXISTS idx_aegis_webhooks_customer ON aegis_webhooks(customer_id);
 
 -- ============ WEBHOOK DELIVERIES ============
-CREATE TABLE IF NOT EXISTS webhook_deliveries (
+CREATE TABLE IF NOT EXISTS aegis_webhook_deliveries (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    webhook_id UUID NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
+    webhook_id UUID NOT NULL REFERENCES aegis_webhooks(id) ON DELETE CASCADE,
     event_type TEXT NOT NULL,
     payload JSONB NOT NULL,
     response_status INTEGER,
@@ -112,13 +111,12 @@ CREATE TABLE IF NOT EXISTS webhook_deliveries (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_webhook_deliveries_webhook ON webhook_deliveries(webhook_id, created_at DESC);
-CREATE INDEX idx_webhook_deliveries_pending ON webhook_deliveries(next_retry_at) WHERE delivered_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_aegis_webhook_deliveries_webhook ON aegis_webhook_deliveries(webhook_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_aegis_webhook_deliveries_pending ON aegis_webhook_deliveries(next_retry_at) WHERE delivered_at IS NULL;
 
 -- ============ TRIGGERS ============
 
--- Auto-update updated_at on customers
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+CREATE OR REPLACE FUNCTION aegis_update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
@@ -126,24 +124,15 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_customers_updated_at
-    BEFORE UPDATE ON customers
+DROP TRIGGER IF EXISTS aegis_update_customers_updated_at ON aegis_customers;
+CREATE TRIGGER aegis_update_customers_updated_at
+    BEFORE UPDATE ON aegis_customers
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION aegis_update_updated_at_column();
 
--- Reset monthly usage on the first of each month (run via cron or scheduled function)
-CREATE OR REPLACE FUNCTION reset_monthly_api_key_usage()
+CREATE OR REPLACE FUNCTION aegis_reset_monthly_api_key_usage()
 RETURNS void AS $$
 BEGIN
-    UPDATE api_keys SET current_month_usage_usd = 0;
+    UPDATE aegis_api_keys SET current_month_usage_usd = 0;
 END;
 $$ language 'plpgsql';
-
--- ============ ROW LEVEL SECURITY ============
--- (Enable RLS for production — disabled here for ease of initial setup)
-
--- ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE api_keys ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE scan_jobs ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE usage_log ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE webhooks ENABLE ROW LEVEL SECURITY;
