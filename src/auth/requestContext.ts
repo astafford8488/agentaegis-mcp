@@ -12,6 +12,9 @@ export interface RequestContext {
   apiKey?: APIKey;
   authMethod?: "api_key" | "x402" | "none";
   paymentRef?: string;
+  /** Set by the /mcp x402 gate when payment has been verified + settled.
+   *  wrapTool sees this and skips its own payment check (call already paid for). */
+  x402Settled?: boolean;
   ip?: string;
   userAgent?: string;
 }

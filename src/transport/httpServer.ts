@@ -312,6 +312,75 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
 
   app.post("/mcp", apiKeyAuth, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      // ===== x402 gate (only for paid tool calls without an API key) =====
+      // If the request is a JSON-RPC tools/call for a priced tool AND the
+      // caller hasn't authenticated with an API key, require x402 payment.
+      // - No X-PAYMENT header → 402 with payment requirements
+      // - X-PAYMENT present → verify + settle, then proceed
+      const body = req.body;
+      const isToolCall = body?.method === "tools/call";
+      const toolName = isToolCall ? body?.params?.name : undefined;
+      const toolPrice = toolName ? (TOOL_PRICING[toolName] ?? 0) : 0;
+      const requiresPayment = isToolCall && toolPrice > 0 && !req.apiKey;
+
+      if (requiresPayment && process.env.X402_PAYEE_ADDRESS) {
+        const paymentHeader = req.headers["x-payment"] as string | undefined;
+        const requirements = (await import("../auth/x402Auth.js")).buildPaymentRequirements(toolName!, "/mcp");
+
+        if (!paymentHeader) {
+          // RFC: send 402 with x402 payment requirements
+          return res.status(402).json({
+            x402Version: 1,
+            error: "X-PAYMENT header required",
+            accepts: [requirements],
+          });
+        }
+
+        // Verify + settle the payment
+        const x402Auth = await import("../auth/x402Auth.js");
+        const verified = await x402Auth.verifyX402Payment(paymentHeader, requirements);
+        if (!verified.isValid) {
+          return res.status(402).json({
+            x402Version: 1,
+            error: `Payment invalid: ${verified.invalidReason || "unknown"}`,
+            accepts: [requirements],
+          });
+        }
+        const settlement = await x402Auth.settleX402Payment(paymentHeader, requirements);
+        if (!settlement.success) {
+          return res.status(402).json({
+            x402Version: 1,
+            error: `Settlement failed: ${settlement.error || "unknown"}`,
+            accepts: [requirements],
+          });
+        }
+        // Tell the client the payment was settled
+        res.setHeader(
+          "X-PAYMENT-RESPONSE",
+          Buffer.from(JSON.stringify({
+            success: true,
+            transaction: settlement.txHash,
+            network: process.env.X402_NETWORK || "base-sepolia",
+            payer: verified.payerAddress,
+          })).toString("base64")
+        );
+        // Mark request as x402-paid so wrapTool skips its own payment check
+        (req as any).x402Settled = true;
+        // Log the x402-paid call
+        if (isDbConfigured()) {
+          await logUsage({
+            tool_name: toolName!,
+            target: undefined,
+            price_usd: toolPrice,
+            paid_via: "x402",
+            payment_ref: settlement.txHash,
+            success: true,
+            request_ip: req.ip,
+            user_agent: req.headers["user-agent"],
+          }).catch(() => { /* best effort */ });
+        }
+      }
+
       const sessionId = req.headers["mcp-session-id"] as string | undefined;
       let transport: StreamableHTTPServerTransport;
 
@@ -354,10 +423,12 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
 
       // Run the entire request inside an AsyncLocalStorage context so tool
       // handlers can read the api key/customer without explicit threading.
+      const x402Settled = (req as any).x402Settled === true;
       await runWithContext(
         {
           apiKey: req.apiKey,
-          authMethod: req.authMethod,
+          authMethod: x402Settled ? "x402" : req.authMethod,
+          x402Settled,
           ip: req.ip,
           userAgent: req.headers["user-agent"],
         },

@@ -70,6 +70,16 @@ function wrapTool(toolName: string, handler: (args: any) => Promise<any>, option
     // Fall back to the legacy preAuthorized callback or skipPayment for stdio dev mode.
     const ctx = getRequestContext();
 
+    // x402-settled requests already paid at the /mcp gate — just run the tool.
+    if (ctx?.x402Settled) {
+      try {
+        const result = await handler(args);
+        return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (err) {
+        return { content: [{ type: "text" as const, text: JSON.stringify({ error: String(err) }) }], isError: true };
+      }
+    }
+
     if (ctx?.apiKey && isDbConfigured()) {
       // HTTP path with valid API key — charge the customer's monthly budget.
       const apiKey = ctx.apiKey;
