@@ -13,6 +13,13 @@ export interface PaymentRequirements {
   description: string;
   mimeType: string;
   maxTimeoutSeconds: number;
+  /** Required by the x402 facilitator for EIP-712 signature verification.
+   *  Identifies the USDC contract's typed-data domain so the signed payload
+   *  can be reconstructed and verified. */
+  extra?: {
+    name: string;
+    version: string;
+  };
 }
 
 const X402_FACILITATOR_URL = process.env.X402_FACILITATOR_URL || "https://x402.org/facilitator";
@@ -25,6 +32,10 @@ const NETWORK_TO_USDC: Record<string, string> = {
   "base-sepolia": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   "ethereum": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 };
+
+// EIP-712 domain for USDC's transferWithAuthorization. Same on testnet/mainnet.
+// Circle's USDC uses {name: "USDC", version: "2"} in the typed data domain.
+const USDC_EIP712_DOMAIN = { name: "USDC", version: "2" };
 
 export function buildPaymentRequirements(toolName: string, resourcePath: string): PaymentRequirements {
   const priceUsd = TOOL_PRICING[toolName] || 0;
@@ -40,6 +51,7 @@ export function buildPaymentRequirements(toolName: string, resourcePath: string)
     description: `AgentAegis ${toolName} — single tool invocation`,
     mimeType: "application/json",
     maxTimeoutSeconds: 60,
+    extra: USDC_EIP712_DOMAIN,
   };
 }
 
