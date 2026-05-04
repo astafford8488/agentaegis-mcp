@@ -27,4 +27,5 @@ export const TOOL_PRICING: Record<string, number> = {
 
   // Free utility tools (always 0)
   account_balance: 0,
+  help: 0,
 };

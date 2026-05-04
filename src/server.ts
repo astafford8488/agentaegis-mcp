@@ -34,6 +34,7 @@ import { credentialCheck, credentialCheckSchema } from "./tools/offensive/creden
 
 // Account tools (free for the agent — needed to manage budget)
 import { accountBalance, accountBalanceSchema } from "./tools/account/accountBalance.js";
+import { help, helpSchema } from "./tools/account/help.js";
 
 // Middleware
 import { verifyPayment } from "./middleware/x402.js";
@@ -113,6 +114,15 @@ export function buildMcpServer(options: ServerOptions = {}): McpServer {
     "Returns the calling API key's prepaid balance, monthly limit, current month usage, and a breakdown of how many of each tool the customer can still afford. Free to call.",
     accountBalanceSchema.shape,
     wrapTool("account_balance", accountBalance, { skipPayment: true })
+  );
+
+  // Help — free FAQ tool so agents can discover authentication, billing,
+  // tool catalog, error semantics, integration patterns. Mirrors agentaegis.org/faq.
+  server.tool(
+    "help",
+    "Returns AgentAegis FAQ — authentication, balance/billing, tool catalog, async jobs, error codes, x402, rate limits, security. Optional topic filter. Free to call.",
+    helpSchema.shape,
+    wrapTool("help", help, { skipPayment: true })
   );
 
   return server;

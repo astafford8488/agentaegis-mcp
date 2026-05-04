@@ -98,6 +98,21 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
     });
   });
 
+  // FAQ — public endpoint, same content the help tool returns.
+  // Optional ?topic=getting_started filter.
+  app.get("/faq", async (req, res) => {
+    const { FAQ } = await import("../tools/account/help.js");
+    const topic = (req.query.topic as string | undefined) || "all";
+    const entries = topic === "all" ? FAQ : FAQ.filter((e) => e.topic === topic);
+    res.set("Cache-Control", "public, max-age=300");
+    res.json({
+      topic,
+      topics_available: Array.from(new Set(FAQ.map((e) => e.topic))),
+      entry_count: entries.length,
+      entries,
+    });
+  });
+
   // Pricing
   app.get("/pricing", (_req, res) => {
     res.json({
