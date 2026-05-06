@@ -19,6 +19,8 @@ import {
 } from "../payments/stripe.js";
 import { buildAdminRouter } from "./adminRoutes.js";
 import { runWithContext } from "../auth/requestContext.js";
+import { runHealthCheck } from "./healthCheck.js";
+import { Sentry } from "../observability/sentry.js";
 
 export function buildHttpApp(buildServer: () => McpServer): Express {
   const app = express();
@@ -87,7 +89,7 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
   // === All other routes use JSON body parser ===
   app.use(express.json({ limit: "5mb" }));
 
-  // Health check
+  // Liveness — fast, no upstream calls. For container orchestration probes.
   app.get("/health", (_req, res) => {
     res.json({
       status: "ok",
@@ -96,6 +98,16 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
       db_configured: isDbConfigured(),
       timestamp: new Date().toISOString(),
     });
+  });
+
+  // Deep health — calls each upstream dependency in parallel. For external
+  // uptime monitors that need to detect partial outages.
+  // Returns 200 when status==="ok" or "degraded", 503 when "fail" so monitors
+  // can alert on hard failure (DB down) but treat upstream-only outages as
+  // informational.
+  app.get("/health/deep", async (_req, res) => {
+    const report = await runHealthCheck();
+    res.status(report.status === "fail" ? 503 : 200).json(report);
   });
 
   // FAQ — public endpoint, same content the help tool returns.
@@ -461,6 +473,21 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
       return res.status(400).json({ error: "Invalid or missing session ID" });
     }
     await transports.get(sessionId)!.handleRequest(req, res);
+  });
+
+  // Sentry Express error handler — must be the LAST middleware registered.
+  // Captures any unhandled errors thrown from the route handlers above and
+  // forwards them to Sentry with request context attached. No-op if Sentry
+  // wasn't initialized (SENTRY_DSN unset).
+  Sentry.setupExpressErrorHandler(app);
+
+  // Final fallback error handler — keeps the server from leaking stack traces
+  // to clients while still surfacing a useful response. Runs AFTER Sentry
+  // has captured the error.
+  app.use((err: any, _req: Request, res: Response, _next: any) => {
+    if (res.headersSent) return;
+    console.error("[http] unhandled:", err);
+    res.status(500).json({ error: "Internal server error" });
   });
 
   return app;

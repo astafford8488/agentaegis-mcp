@@ -1,4 +1,9 @@
 import "dotenv/config";
+import { initSentry } from "./observability/sentry.js";
+// Sentry MUST initialize before any application code that might throw on
+// import. Errors in subsequent imports will then be captured.
+initSentry();
+
 import { buildHttpApp } from "./transport/httpServer.js";
 import { buildMcpServer } from "./server.js";
 import type { Request, Response } from "express";
