@@ -27,13 +27,16 @@ Status as of **2026-05-04**. Use this file as the source of truth when picking u
 | 5 | x402 micropayments — testnet end-to-end | Real on-chain settlement on Base Sepolia |
 | 5 | x402 micropayments — **mainnet live** | Receiver `0x3347d4E9925cC379a333c017367248e1A11DF7fC` |
 | 5 | **US Provisional Patent filed** — App. No. `64/057,021`, Confirmation #8319 | USPTO receipt 2026-05-04 7:33 PM ET, micro entity, $65 |
+| 6 | **Customer self-service portal** — `agentaegis-portal` repo, Next.js 15 + Supabase Auth + Vercel | Live at `app.agentaegis.org` 2026-05-06 |
+| 6 | `/account` dashboard, `/keys` CRUD, `/usage` + CSV export, `/transactions`, `/webhooks` CRUD + test | All routes verified end-to-end through Google OAuth + magic link |
 
 **Patent Pending** — provisional discloses dual-rail payment architecture (API-key + x402), MCP-aware body-inspection gating, and unified settlement-to-logging pipeline. 12-month nonprovisional deadline: **2027-05-04**. See `wiki/pages/agentaegis-patent.md` for full filing details.
 
 **Live URLs:**
 - MCP server: https://agentaegis-mcp-production.up.railway.app
 - Landing site: https://www.agentaegis.org
-- GitHub: github.com/astafford8488/agentaegis-mcp + agentaegis-site
+- **Customer portal: https://app.agentaegis.org**
+- GitHub: github.com/astafford8488/agentaegis-mcp + agentaegis-site + agentaegis-portal
 
 ---
 
@@ -85,20 +88,7 @@ Earlier env-var debugging revealed `BETA_SIGNUP_FROM` was set on Vercel but pull
 
 ## 🛣 Next phases (un-shipped)
 
-### Phase 6 — Customer self-service portal (~3 days)
-
-Currently customers can only sign up + manage keys via raw HTTP API. They need a web UI.
-
-- `/login` — Supabase Auth (email magic link)
-- `/account` — balance, recent usage, top-up button
-- `/account/keys` — issue / revoke / rotate API keys
-- `/account/usage` — charge history, export CSV
-- `/account/webhooks` — add/remove webhooks
-- `/account/transactions` — Stripe top-up history
-
-Without this, every paying customer has to email you. With it, a developer can self-serve in 5 minutes. **My pick for next phase** — biggest impact on non-developer onboarding.
-
-### Phase 7 — Operational hardening (~2 days)
+### Phase 7 — Operational hardening (~2 days) — **next pick**
 
 - Sentry / error tracking
 - `status.agentaegis.org` (Better Stack free tier)
