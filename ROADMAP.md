@@ -29,6 +29,13 @@ Status as of **2026-05-04**. Use this file as the source of truth when picking u
 | 5 | **US Provisional Patent filed** — App. No. `64/057,021`, Confirmation #8319 | USPTO receipt 2026-05-04 7:33 PM ET, micro entity, $65 |
 | 6 | **Customer self-service portal** — `agentaegis-portal` repo, Next.js 15 + Supabase Auth + Vercel | Live at `app.agentaegis.org` 2026-05-06 |
 | 6 | `/account` dashboard, `/keys` CRUD, `/usage` + CSV export, `/transactions`, `/webhooks` CRUD + test | All routes verified end-to-end through Google OAuth + magic link |
+| 7 | **Sentry SDK** in both repos — `@sentry/node` (MCP) + `@sentry/nextjs` (portal) | Code shipped 2026-05-06; DSN env vars set by Andrew |
+| 7 | **Webhook delivery dashboard** in portal at `/account/webhooks/[id]/deliveries` | Live 2026-05-06 |
+| 7 | **Better Stack uptime monitoring** — 5 monitors (MCP liveness/deep, portal, marketing, x402 facilitator) | Live 2026-05-07 |
+| 7 | **Status page** at `status.agentaegis.org` — Better Stack with custom Cloudflare CNAME | Live 2026-05-07 |
+| 7 | **`/health/deep` endpoint** — DB + x402 + Stripe parallel checks with per-check latency | Live on Railway after redeploy 2026-05-07 |
+| 7 | **Operational runbooks** — IR, backup verification, uptime monitoring at `agentaegis-mcp/runbooks/` | Committed 2026-05-06 |
+| 7 | **AbuseIPDB .org domain verified** — threat intel calls now use the canonical domain | Resolved 2026-05-07 |
 
 **Patent Pending** — provisional discloses dual-rail payment architecture (API-key + x402), MCP-aware body-inspection gating, and unified settlement-to-logging pipeline. 12-month nonprovisional deadline: **2027-05-04**. See `wiki/pages/agentaegis-patent.md` for full filing details.
 
@@ -36,6 +43,7 @@ Status as of **2026-05-04**. Use this file as the source of truth when picking u
 - MCP server: https://agentaegis-mcp-production.up.railway.app
 - Landing site: https://www.agentaegis.org
 - **Customer portal: https://app.agentaegis.org**
+- **Status page: https://status.agentaegis.org**
 - GitHub: github.com/astafford8488/agentaegis-mcp + agentaegis-site + agentaegis-portal
 
 ---
@@ -88,16 +96,7 @@ Earlier env-var debugging revealed `BETA_SIGNUP_FROM` was set on Vercel but pull
 
 ## 🛣 Next phases (un-shipped)
 
-### Phase 7 — Operational hardening (~2 days) — **next pick**
-
-- Sentry / error tracking
-- `status.agentaegis.org` (Better Stack free tier)
-- Datadog or similar uptime monitoring on `/health`
-- AgentAegis IR plan operationalized (we have the doc — need on-call rotation)
-- Backup verification (test Supabase restore)
-- Webhook delivery dashboard (DB exists, no UI yet)
-
-### Phase 8 — Public launch prep (~1–2 days)
+### Phase 8 — Public launch prep (~1–2 days) — **next pick**
 
 - Demo video (3 min, 2 demos + sign-up flow)
 - Show HN draft — "I built an MCP server for cybersecurity tools — pay per call via card or USDC"
