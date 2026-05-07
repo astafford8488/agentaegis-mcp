@@ -1,0 +1,224 @@
+# MCP registry submission package
+
+The MCP ecosystem has multiple directories. They have different policies — some accept hosted/paid services, some require open-source self-hostable servers. AgentAegis is a hosted, paid service, so the submission strategy varies per directory.
+
+This document is the **canonical submission text and metadata** that we submit verbatim. The Notion mirror under Launch is the review surface — edit there, then sync changes back here before submitting.
+
+## Reality check — is AgentAegis directory-eligible?
+
+| Directory | Accepts hosted/paid? | Requires open source? | Verdict |
+|---|---|---|---|
+| **modelcontextprotocol/servers** (official) | Yes (separate "Hosted" section) | No | ✅ Submit |
+| **smithery.ai** | Yes (designed for hosted) | No | ✅ Submit |
+| **mcp.so** | Yes | No | ✅ Submit |
+| **glama.ai/mcp** | Yes | No | ✅ Submit |
+| **mcp-get** (CLI installer) | No | Yes — must clone-and-run | ❌ Skip (until we have an open-source companion package) |
+
+**Recommendation:** Submit to the four ✅ directories. For the OSS-only directories, plan a separate open-source companion package (`@agentaegis/mcp-client` or similar — a thin TypeScript SDK that wraps the hosted endpoint with type-safe helpers). That gets you in those directories AND drives lower-friction integration.
+
+## Submission 1 — modelcontextprotocol/servers
+
+**Where:** GitHub PR to `https://github.com/modelcontextprotocol/servers`
+**Section:** README.md → "🌎 Third-Party Servers" → likely under "🛠️ Official Integrations" or a new "💼 Commercial / Hosted" section depending on current README structure
+**Format:** A bullet under the appropriate section
+
+### PR body (copy/paste into PR description)
+
+```
+This PR adds AgentAegis to the third-party servers list under [section].
+
+AgentAegis is a hosted MCP server exposing 22 cybersecurity tools (vuln
+scans, compliance checks, threat intel, code security, identity audits)
+with per-call billing — pre-funded API keys (Stripe-backed) or per-call
+USDC micropayments via the x402 protocol on Base mainnet.
+
+The server is publicly reachable at:
+  https://agentaegis-mcp-production.up.railway.app/mcp
+
+A free tier covers tools/list, help, and account_balance — agents can
+discover capabilities without payment. Paid tools start at $0.10/call.
+
+Production status:
+- Live with paying customers
+- Status page: https://status.agentaegis.org
+- Public FAQ: https://agentaegis-mcp-production.up.railway.app/faq
+
+Per the README's contribution guidelines, this is added under [hosted/
+third-party] because the server is not self-hostable open source — the
+billing engine is proprietary while the marketing site, FAQ, and
+specification are public.
+
+Happy to adjust the description, section, or formatting per maintainer
+guidance.
+```
+
+### README entry (copy/paste into README.md)
+
+```markdown
+- **[AgentAegis](https://www.agentaegis.org)** — 22 cybersecurity tools (vuln scans, compliance, threat intel, code security, identity audits) with per-call billing via API keys or x402 USDC micropayments. Free tier for discovery; paid tools from $0.10/call. Hosted.
+```
+
+### Pre-submission checklist
+
+- [ ] Read the current `CONTRIBUTING.md` of `modelcontextprotocol/servers` for any updated rules
+- [ ] Verify there's a section appropriate to a hosted, paid service
+- [ ] If no such section exists, propose one in the PR body (don't unilaterally create)
+- [ ] Confirm the entry stays alphabetized within its section
+- [ ] Sign your commits if the repo requires it (`git commit -S`)
+
+---
+
+## Submission 2 — smithery.ai
+
+**Where:** https://smithery.ai/new (web form)
+**Format:** Form fill with a `smithery.json` configuration file
+
+### `smithery.json` (place at repo root if Smithery requires)
+
+```json
+{
+  "name": "agentaegis",
+  "displayName": "AgentAegis",
+  "description": "22 cybersecurity tools for AI agents — vuln scans, compliance checks, threat intel, code security, identity audits. Per-call billing via API key or x402 USDC.",
+  "icon": "https://www.agentaegis.org/icon.png",
+  "homepage": "https://www.agentaegis.org",
+  "repository": "https://github.com/astafford8488/agentaegis-mcp",
+  "license": "Proprietary (hosted SaaS)",
+  "categories": ["security", "operations", "compliance"],
+  "transport": "streamable-http",
+  "url": "https://agentaegis-mcp-production.up.railway.app/mcp",
+  "auth": {
+    "type": "bearer",
+    "header": "Authorization",
+    "format": "Bearer {api_key}",
+    "obtain": "https://www.agentaegis.org/pay",
+    "alternative": {
+      "type": "x402",
+      "description": "Per-call HTTP 402 + ERC-3009 USDC settlement on Base mainnet (no signup required)"
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "apiKey": {
+        "type": "string",
+        "description": "AgentAegis API key (starts with aegis_). Get one at agentaegis.org/pay or use x402 for per-call payments without an API key.",
+        "required": false
+      }
+    }
+  }
+}
+```
+
+### Form fields
+
+| Field | Value |
+|---|---|
+| Name | AgentAegis |
+| Description | 22 cybersecurity tools for AI agents — pay per call via API key or USDC. Free discovery tier. |
+| Category | Security · Operations · Compliance (multi-select) |
+| Author | Andrew Stafford |
+| Author URL | https://www.agentaegis.org |
+| Homepage | https://www.agentaegis.org |
+| GitHub | https://github.com/astafford8488/agentaegis-mcp |
+| MCP endpoint | https://agentaegis-mcp-production.up.railway.app/mcp |
+| Tags | cybersecurity, vulnerability-scanning, compliance, x402, payments, threat-intel |
+
+### Pre-submission checklist
+
+- [ ] Verify Smithery's current submission flow (it changes — check smithery.ai/docs)
+- [ ] Confirm whether they want the `smithery.json` committed to the repo or pasted in the form
+- [ ] If they fetch the icon from a URL, confirm `https://www.agentaegis.org/icon.png` is set up (currently a TODO — update marketing site to expose a square icon at that path)
+
+---
+
+## Submission 3 — mcp.so
+
+**Where:** https://mcp.so/submit (form-based)
+
+### Form fields
+
+| Field | Value |
+|---|---|
+| Name | AgentAegis |
+| Description | A hosted MCP server with 22 cybersecurity tools. Pay per call via Stripe API key or per-call USDC (x402). Free tier for tool discovery. Patent pending. |
+| Category | Security |
+| Author / Maintainer | Andrew Stafford |
+| Repository URL | https://github.com/astafford8488/agentaegis-mcp |
+| Homepage | https://www.agentaegis.org |
+| MCP endpoint | https://agentaegis-mcp-production.up.railway.app/mcp |
+| License | Proprietary / SaaS |
+| Tags | security, vulnerability-management, compliance, threat-intel, x402, payments, autonomous-agents |
+
+### Description (longer, if mcp.so allows ~500 chars)
+
+```
+AgentAegis exposes 22 cybersecurity tools to AI agents through a single MCP endpoint with per-call billing on two rails: pre-funded API keys (Stripe-backed) or per-call USDC micropayments via the x402 protocol on Base mainnet. Free discovery tier (tools/list, help, account_balance) means agents can explore capabilities without payment. Paid tools include vuln scans, compliance checks (SOC 2, ISO 27001, HIPAA, PCI DSS), threat intelligence (NVD, AbuseIPDB, OTX, abuse.ch), code security (SAST, secret scanning, dependency audit), and identity tooling (access review, MFA audit). Patent pending on the dual-rail architecture.
+```
+
+---
+
+## Submission 4 — glama.ai/mcp
+
+**Where:** https://glama.ai/mcp/submit
+**Format:** Form-based, accepts hosted servers
+
+### Form fields
+
+Mostly the same as mcp.so above. Glama-specific fields:
+
+| Field | Value |
+|---|---|
+| Pricing model | Pay-per-call ($0.10–$1.00 per tool, varies) |
+| Free tier | Yes (discovery tools — tools/list, help, account_balance) |
+| Authentication | Bearer token (API key) OR x402 (per-call USDC, no signup) |
+| Self-hostable | No (hosted SaaS) |
+
+---
+
+## Pre-submission across all directories
+
+- [ ] **Public icon at `agentaegis.org/icon.png`** — needed by Smithery and Glama. 256×256 or 512×512 PNG. Currently no such asset; see `agentaegis-site/public/` to add.
+- [ ] **`/.well-known/mcp.json`** — some directories scrape this file from the MCP endpoint. Worth adding to the MCP server (returns the same metadata as `tools/list` plus pricing). Not required, but improves discovery.
+- [ ] **CONTRIBUTING.md visible in agentaegis-mcp** — even though the repo is private, having a public CONTRIBUTING.md with "this server is closed-source; here's how to integrate" reduces friction for directory maintainers reviewing the entry.
+- [ ] **Status badge** — embed `https://status.agentaegis.org` badge in submission descriptions where allowed. Signals operator seriousness.
+- [ ] **Demo video** — Phase 8 Day 1 deliverable. Once recorded, include link in all directory submissions.
+
+## Submission order (recommended)
+
+1. **mcp.so first** — lowest bar, fastest review, gives you a "we're in directory X" social proof for higher-bar submissions
+2. **glama.ai second** — similar bar, similar audience, doubles your directory presence
+3. **smithery.ai third** — they have moderation; submit when the icon + well-known endpoint exist
+4. **modelcontextprotocol/servers last** — official directory, highest scrutiny. You want to walk in with 3 other directory listings, the Show HN post, and the demo video as social proof.
+
+## After-submission tracking
+
+Track in the Notion outreach database (Launch → Cold Outreach) with category=`directory` and a status field for each submission's review state:
+- `submitted`
+- `under_review`
+- `accepted`
+- `rejected_with_reason`
+- `accepted_with_changes_requested`
+
+---
+
+## Open-source companion package (deferred)
+
+To unlock OSS-only directories, ship a separate small package:
+
+**Name:** `@agentaegis/mcp-client` (npm) or `agentaegis-cli` (Python via PyPI)
+**Repo:** New public repo, MIT or Apache-2.0 licensed
+**What it does:**
+- Thin client wrapper around the hosted endpoint
+- Type-safe TypeScript helpers per tool
+- Helper for x402 payment flow (uses x402-fetch under the hood)
+- Helper for API key auth
+- Example agent integrations (Claude Desktop config snippet, LangChain wrapper, AutoGen wrapper)
+
+This separate package addresses:
+- mcp-get directory listing
+- "I want to see the source" objections from would-be users
+- Discoverability via npm/PyPI search
+- Demonstrates we know the MCP client side well, not just the server
+
+**Effort:** ~1 week. Not part of Phase 8; queue for Phase 9 unless launch traction demands it sooner.
