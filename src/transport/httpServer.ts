@@ -337,7 +337,18 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
 
       if (requiresPayment && process.env.X402_PAYEE_ADDRESS) {
         const paymentHeader = req.headers["x-payment"] as string | undefined;
-        const fullResourceUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+        // Railway / Vercel terminate TLS at the edge, so req.protocol comes
+        // through as "http" even when the user reached us over HTTPS. The
+        // resource URL is bound into the EIP-712 signed payload — if we
+        // mis-state the scheme, the agent's signature won't match what the
+        // facilitator computes, and verification fails. Trust X-Forwarded-Proto
+        // (set by Railway / Vercel / Cloudflare) and force HTTPS in production.
+        const forwardedProto = req.headers["x-forwarded-proto"] as string | undefined;
+        const protocol =
+          forwardedProto === "https" || req.protocol === "https" || process.env.NODE_ENV === "production"
+            ? "https"
+            : req.protocol;
+        const fullResourceUrl = `${protocol}://${req.get("host")}${req.originalUrl}`;
         const requirements = (await import("../auth/x402Auth.js")).buildPaymentRequirements(toolName!, fullResourceUrl);
 
         if (!paymentHeader) {

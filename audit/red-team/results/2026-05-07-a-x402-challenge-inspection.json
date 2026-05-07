@@ -1,0 +1,93 @@
+{
+  "test": "A — x402 challenge inspection",
+  "timestamp": "2026-05-07T19:06:45.483Z",
+  "target": "https://agentaegis-mcp-production.up.railway.app",
+  "challenge_body": {
+    "x402Version": 1,
+    "error": "X-PAYMENT header required",
+    "accepts": [
+      {
+        "scheme": "exact",
+        "network": "base",
+        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "payTo": "0x3347d4E9925cC379a333c017367248e1A11DF7fC",
+        "maxAmountRequired": "100000",
+        "resource": "http://agentaegis-mcp-production.up.railway.app/mcp",
+        "description": "AgentAegis cve_lookup — single tool invocation",
+        "mimeType": "application/json",
+        "maxTimeoutSeconds": 60,
+        "extra": {
+          "name": "USDC",
+          "version": "2"
+        }
+      }
+    ]
+  },
+  "findings": [
+    {
+      "case_id": "A2-i",
+      "description": "EIP-712 domain {name:USDC, version:2} present in extra",
+      "expected": "{\"name\":\"USDC\",\"version\":\"2\"}",
+      "actual": "{\"name\":\"USDC\",\"version\":\"2\"}",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "A2-ii",
+      "description": "resource field is fully-qualified URL (scheme + host + path)",
+      "expected": "starts with https://",
+      "actual": "http://agentaegis-mcp-production.up.railway.app/mcp",
+      "verdict": "FAIL"
+    },
+    {
+      "case_id": "A2-iii",
+      "description": "network is base (mainnet)",
+      "expected": "base",
+      "actual": "base",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "A2-iv",
+      "description": "asset is USDC contract on Base mainnet",
+      "expected": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "actual": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "A2-v",
+      "description": "maxAmountRequired matches expected $0.10 cve_lookup price",
+      "expected": "100000",
+      "actual": "100000",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "A2-vi",
+      "description": "payTo is set to a valid Ethereum address",
+      "expected": "0x[40 hex chars]",
+      "actual": "0x3347d4E9925cC379a333c017367248e1A11DF7fC",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "A1-malformed",
+      "description": "Malformed X-PAYMENT rejected with 402, server doesn't crash",
+      "expected": "status 402, body mentions verification or parse failure",
+      "actual": "status 402, body: {\"x402Version\":1,\"error\":\"Payment invalid: Facilitator 500: {\\\"isValid\\\":false,\\\"invalidReason\\\":\\\"unexpected_error\\\",\\\"invalidMessage\\\":\\\"No facilita",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "A1-fake-sig",
+      "description": "Structurally valid but unsigned X-PAYMENT rejected by facilitator",
+      "expected": "status 402, body mentions invalid signature or verification failure",
+      "actual": "status 402, body: {\"x402Version\":1,\"error\":\"Payment invalid: Facilitator 500: {\\\"isValid\\\":false,\\\"invalidReason\\\":\\\"unexpected_error\\\",\\\"invalidMessage\\\":\\\"No facilitator registered for scheme: exact and network: base",
+      "verdict": "PASS"
+    }
+  ],
+  "summary": {
+    "total": 8,
+    "passed": 7,
+    "failed": 1
+  },
+  "overall_verdict": "FAIL",
+  "failed_cases": [
+    "A2-ii"
+  ]
+}
