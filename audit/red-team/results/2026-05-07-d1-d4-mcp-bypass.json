@@ -1,0 +1,48 @@
+{
+  "test": "D1–D4, D6 — MCP body-inspection bypass attempts",
+  "timestamp": "2026-05-07T15:25:02.178Z",
+  "target": "https://agentaegis-mcp-production.up.railway.app",
+  "cases": [
+    {
+      "case_id": "D1",
+      "description": "Unicode null-byte in tool name",
+      "expected": "tool not found / 404 / 400 (strict-equality lookup)",
+      "status": 400,
+      "body_excerpt": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"No valid session ID\"},\"id\":null}",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "D2",
+      "description": "JSON-RPC batch (array of 10 tool calls)",
+      "expected": "Either clear rejection OR each call billed separately (verify in usage_log)",
+      "status": 400,
+      "body_excerpt": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"No valid session ID\"},\"id\":null}",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "D3",
+      "description": "Path traversal in tool name",
+      "expected": "tool not found / 400 (strict-equality lookup)",
+      "status": 400,
+      "body_excerpt": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"No valid session ID\"},\"id\":null}",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "D4",
+      "description": "method=tools/list with cve_lookup in params (no payment)",
+      "expected": "tools/list response (free); does NOT invoke cve_lookup",
+      "status": 400,
+      "body_excerpt": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"No valid session ID\"},\"id\":null}",
+      "verdict": "FAIL"
+    },
+    {
+      "case_id": "D6",
+      "description": "Malformed JSON body",
+      "expected": "400 Bad Request, no crash",
+      "status": 400,
+      "body_excerpt": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Bad Request</pre>\n</body>\n</html>\n",
+      "verdict": "PASS"
+    }
+  ],
+  "overall_verdict": "FAIL"
+}

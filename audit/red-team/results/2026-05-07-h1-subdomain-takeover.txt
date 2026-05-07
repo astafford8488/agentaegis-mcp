@@ -1,0 +1,89 @@
+=== Subdomain enumeration for agentaegis.org ===
+Started: 2026-05-07T15:25:19Z
+
+--- Known subdomains (manual list) ---
+
+### www.agentaegis.org
+
+CNAME chain:
+audit/red-team/auto/h1-subdomain-takeover.sh: line 46: dig: command not found
+  (no CNAME)
+
+A records:
+audit/red-team/auto/h1-subdomain-takeover.sh: line 49: dig: command not found
+  (no A records)
+
+HTTP HEAD:
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Access-Control-Allow-Origin: *
+Age: 228802
+Cache-Control: public, max-age=0, must-revalidate
+
+### app.agentaegis.org
+
+CNAME chain:
+audit/red-team/auto/h1-subdomain-takeover.sh: line 46: dig: command not found
+  (no CNAME)
+
+A records:
+audit/red-team/auto/h1-subdomain-takeover.sh: line 49: dig: command not found
+  (no A records)
+
+HTTP HEAD:
+HTTP/1.1 307 Temporary Redirect
+Age: 0
+Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate
+Content-Type: text/html; charset=utf-8
+Date: Thu, 07 May 2026 15:25:17 GMT
+
+### status.agentaegis.org
+
+CNAME chain:
+audit/red-team/auto/h1-subdomain-takeover.sh: line 46: dig: command not found
+  (no CNAME)
+
+A records:
+audit/red-team/auto/h1-subdomain-takeover.sh: line 49: dig: command not found
+  (no A records)
+
+HTTP HEAD:
+HTTP/1.1 200 OK
+Alt-Svc: h3=":443"; ma=2592000
+Cache-Control: max-age=0, public, s-maxage=3, stale-while-revalidate=3
+Content-Length: 422467
+Content-Security-Policy: base-uri *; frame-ancestors *; connect-src * 'unsafe-inline' 'unsafe-eval' data: blob: 'unsafe-hashes'; child-src * 'unsafe-inline' 'unsafe-eval' data: blob: 'unsafe-hashes'; frame-src * 'unsafe-inline' 'unsafe-eval' data: blob: 'unsafe-hashes'; media-src * 'unsafe-inline' 'unsafe-eval' data: blob: 'unsafe-hashes'; font-src * 'unsafe-inline' 'unsafe-eval' data: blob: 'unsafe-hashes'; form-action *; style-src * 'unsafe-inline' 'unsafe-eval' data: blob: 'unsafe-hashes'; script-src * 'unsafe-inline' 'unsafe-eval' data: blob: 'unsafe-hashes'; worker-src * 'unsafe-inline' 'unsafe-eval' data: blob: 'unsafe-hashes'; img-src * 'unsafe-inline' 'unsafe-eval' data: blob: 'unsafe-hashes'; default-src * 'unsafe-inline' 'unsafe-eval' data: blob: 'unsafe-hashes'
+
+### agentaegis.org
+
+CNAME chain:
+audit/red-team/auto/h1-subdomain-takeover.sh: line 46: dig: command not found
+  (no CNAME)
+
+A records:
+audit/red-team/auto/h1-subdomain-takeover.sh: line 49: dig: command not found
+  (no A records)
+
+HTTP HEAD:
+HTTP/1.1 307 Temporary Redirect
+Cache-Control: public, max-age=0, must-revalidate
+Content-Type: text/plain
+Date: Thu, 07 May 2026 15:25:18 GMT
+Location: https://www.agentaegis.org/
+
+--- Subdomains via crt.sh (cert transparency) ---
+(crt.sh unavailable or python3 missing)
+
+--- subjack scan ---
+subjack not installed. Install: go install github.com/haccer/subjack@latest
+Manual review: confirm each CNAME above resolves to its claimed provider.
+
+=== Summary ===
+Manual review needed: confirm each CNAME points at a claimed (non-dangling) provider.
+Specifically watch for:
+  - status.agentaegis.org: should CNAME to Better Stack (e.g., *.betteruptime.com or *.betterstackapp.com)
+  - app.agentaegis.org: should CNAME to Vercel (cname.vercel-dns.com)
+  - www.agentaegis.org: should CNAME to Vercel (cname.vercel-dns.com)
+
+If any CNAME resolves to a domain we don't actively own (deleted Better Stack page, abandoned Vercel project, etc), that's a P1 finding.
+Finished: 2026-05-07T15:25:21Z

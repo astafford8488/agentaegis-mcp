@@ -1,0 +1,91 @@
+{
+  "test": "F1–F2 — Open redirect via `next` param",
+  "timestamp": "2026-05-07T15:24:50.409Z",
+  "portal": "https://app.agentaegis.org",
+  "cases": [
+    {
+      "id": "F1",
+      "next": "https://evil.com",
+      "description": "Full external URL",
+      "status": 307,
+      "location": "https://app.agentaegis.org/login?error=PKCE%20code%20verifier%20not%20found%20in%20storage.%20This%20can%20happen%20if%20the%20auth%20flow%20was%20initiated%20in%20a%20different%20browser%20or%20device%2C%20or%20if%20the%20storage%20was%20cleared.%20For%20SSR%20frameworks%20(Next.js%2C%20SvelteKit%2C%20etc.)%2C%20use%20%40supabase%2Fssr%20on%20both%20the%20server%20and%20client%20to%20store%20the%20code%20verifier%20in%20cookies.",
+      "safe": true,
+      "verdict": "PASS"
+    },
+    {
+      "id": "F1b",
+      "next": "https://evil.com/path",
+      "description": "Full external URL with path",
+      "status": 307,
+      "location": "https://app.agentaegis.org/login?error=PKCE%20code%20verifier%20not%20found%20in%20storage.%20This%20can%20happen%20if%20the%20auth%20flow%20was%20initiated%20in%20a%20different%20browser%20or%20device%2C%20or%20if%20the%20storage%20was%20cleared.%20For%20SSR%20frameworks%20(Next.js%2C%20SvelteKit%2C%20etc.)%2C%20use%20%40supabase%2Fssr%20on%20both%20the%20server%20and%20client%20to%20store%20the%20code%20verifier%20in%20cookies.",
+      "safe": true,
+      "verdict": "PASS"
+    },
+    {
+      "id": "F2",
+      "next": "//evil.com",
+      "description": "Protocol-relative URL",
+      "status": 307,
+      "location": "https://app.agentaegis.org/login?error=PKCE%20code%20verifier%20not%20found%20in%20storage.%20This%20can%20happen%20if%20the%20auth%20flow%20was%20initiated%20in%20a%20different%20browser%20or%20device%2C%20or%20if%20the%20storage%20was%20cleared.%20For%20SSR%20frameworks%20(Next.js%2C%20SvelteKit%2C%20etc.)%2C%20use%20%40supabase%2Fssr%20on%20both%20the%20server%20and%20client%20to%20store%20the%20code%20verifier%20in%20cookies.",
+      "safe": true,
+      "verdict": "PASS"
+    },
+    {
+      "id": "F2b",
+      "next": "//evil.com/account",
+      "description": "Protocol-relative with path",
+      "status": 307,
+      "location": "https://app.agentaegis.org/login?error=PKCE%20code%20verifier%20not%20found%20in%20storage.%20This%20can%20happen%20if%20the%20auth%20flow%20was%20initiated%20in%20a%20different%20browser%20or%20device%2C%20or%20if%20the%20storage%20was%20cleared.%20For%20SSR%20frameworks%20(Next.js%2C%20SvelteKit%2C%20etc.)%2C%20use%20%40supabase%2Fssr%20on%20both%20the%20server%20and%20client%20to%20store%20the%20code%20verifier%20in%20cookies.",
+      "safe": true,
+      "verdict": "PASS"
+    },
+    {
+      "id": "F3",
+      "next": "/\\evil.com",
+      "description": "Backslash bypass",
+      "status": 307,
+      "location": "https://app.agentaegis.org/login?error=PKCE%20code%20verifier%20not%20found%20in%20storage.%20This%20can%20happen%20if%20the%20auth%20flow%20was%20initiated%20in%20a%20different%20browser%20or%20device%2C%20or%20if%20the%20storage%20was%20cleared.%20For%20SSR%20frameworks%20(Next.js%2C%20SvelteKit%2C%20etc.)%2C%20use%20%40supabase%2Fssr%20on%20both%20the%20server%20and%20client%20to%20store%20the%20code%20verifier%20in%20cookies.",
+      "safe": true,
+      "verdict": "PASS"
+    },
+    {
+      "id": "F4",
+      "next": "javascript:alert(1)",
+      "description": "JavaScript URL (XSS via redirect)",
+      "status": 307,
+      "location": "https://app.agentaegis.org/login?error=PKCE%20code%20verifier%20not%20found%20in%20storage.%20This%20can%20happen%20if%20the%20auth%20flow%20was%20initiated%20in%20a%20different%20browser%20or%20device%2C%20or%20if%20the%20storage%20was%20cleared.%20For%20SSR%20frameworks%20(Next.js%2C%20SvelteKit%2C%20etc.)%2C%20use%20%40supabase%2Fssr%20on%20both%20the%20server%20and%20client%20to%20store%20the%20code%20verifier%20in%20cookies.",
+      "safe": true,
+      "verdict": "PASS"
+    },
+    {
+      "id": "F5",
+      "next": "/account/keys",
+      "description": "Legitimate same-origin path",
+      "status": 307,
+      "location": "https://app.agentaegis.org/login?error=PKCE%20code%20verifier%20not%20found%20in%20storage.%20This%20can%20happen%20if%20the%20auth%20flow%20was%20initiated%20in%20a%20different%20browser%20or%20device%2C%20or%20if%20the%20storage%20was%20cleared.%20For%20SSR%20frameworks%20(Next.js%2C%20SvelteKit%2C%20etc.)%2C%20use%20%40supabase%2Fssr%20on%20both%20the%20server%20and%20client%20to%20store%20the%20code%20verifier%20in%20cookies.",
+      "safe": true,
+      "verdict": "PASS"
+    },
+    {
+      "id": "F6",
+      "next": "@evil.com",
+      "description": "URL with userinfo",
+      "status": 307,
+      "location": "https://app.agentaegis.org/login?error=PKCE%20code%20verifier%20not%20found%20in%20storage.%20This%20can%20happen%20if%20the%20auth%20flow%20was%20initiated%20in%20a%20different%20browser%20or%20device%2C%20or%20if%20the%20storage%20was%20cleared.%20For%20SSR%20frameworks%20(Next.js%2C%20SvelteKit%2C%20etc.)%2C%20use%20%40supabase%2Fssr%20on%20both%20the%20server%20and%20client%20to%20store%20the%20code%20verifier%20in%20cookies.",
+      "safe": true,
+      "verdict": "PASS"
+    },
+    {
+      "id": "F7",
+      "next": "/%2F%2Fevil.com",
+      "description": "URL-encoded //",
+      "status": 307,
+      "location": "https://app.agentaegis.org/login?error=PKCE%20code%20verifier%20not%20found%20in%20storage.%20This%20can%20happen%20if%20the%20auth%20flow%20was%20initiated%20in%20a%20different%20browser%20or%20device%2C%20or%20if%20the%20storage%20was%20cleared.%20For%20SSR%20frameworks%20(Next.js%2C%20SvelteKit%2C%20etc.)%2C%20use%20%40supabase%2Fssr%20on%20both%20the%20server%20and%20client%20to%20store%20the%20code%20verifier%20in%20cookies.",
+      "safe": true,
+      "verdict": "PASS"
+    }
+  ],
+  "failed_count": 0,
+  "verdict": "PASS",
+  "failed_cases": []
+}
