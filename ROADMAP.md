@@ -88,6 +88,17 @@ Phase 5 was verified end-to-end on testnet but not on mainnet. The protocol is i
 - Buy at https://haveibeenpwned.com/API/Key ($3.50/month)
 - Set `HIBP_API_KEY` on Railway
 
+### Railway auto-deploy from GitHub not firing
+
+GitHub→Railway auto-deploy stopped firing after the 2026-05-04 image (`sha256:faecd9a54a...`). Phase 7 commits (199ab42, b6985e4) are merged on master but Railway is still serving the older container — `/health/deep` returns 404 in production despite the route being present in the committed code. Manual `railway up` also doesn't appear to invalidate Railway's build cache.
+
+To fix:
+1. Open Railway dashboard → agentaegis-mcp project → Settings → check Source repo connection
+2. Force a manual deploy from Railway UI (Deploy → Deploy from GitHub)
+3. After /health/deep returns 200/503 (not 404), Better Stack monitor #2 will auto-recover
+
+Workaround for now: Better Stack monitor #1 (basic /health) covers liveness; monitor #2 can be paused until the deploy issue is resolved.
+
 ### Diagnostic Stripe BETA_SIGNUP_FROM check
 
 Earlier env-var debugging revealed `BETA_SIGNUP_FROM` was set on Vercel but pulled empty. We re-set it explicitly. Verify the next real beta signup arrives `from: noreply@agentaegis.org` (not `onboarding@resend.dev`). Last test signup confirmed delivery, but the `from` field wasn't checked.
