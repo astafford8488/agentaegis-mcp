@@ -1,0 +1,56 @@
+{
+  "test": "H4 — Stripe webhook signature spoof",
+  "timestamp": "2026-05-07T19:08:38.380Z",
+  "target": "https://agentaegis-mcp-production.up.railway.app/webhooks/stripe",
+  "cases": [
+    {
+      "case_id": "H4-i",
+      "description": "Missing Stripe-Signature header",
+      "status": 400,
+      "body_excerpt": "{\"error\":\"Missing Stripe-Signature header\"}",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "H4-ii",
+      "description": "Empty Stripe-Signature value",
+      "status": 400,
+      "body_excerpt": "{\"error\":\"Missing Stripe-Signature header\"}",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "H4-iii",
+      "description": "Stripe-Signature with random bytes",
+      "status": 400,
+      "body_excerpt": "{\"error\":\"Invalid signature\"}",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "H4-iv",
+      "description": "Stripe-Signature with valid format but wrong (random) computed HMAC",
+      "status": 400,
+      "body_excerpt": "{\"error\":\"Invalid signature\"}",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "H4-v",
+      "description": "Empty body, no signature",
+      "status": 400,
+      "body_excerpt": "{\"error\":\"Missing Stripe-Signature header\"}",
+      "verdict": "PASS"
+    },
+    {
+      "case_id": "H4-vi",
+      "description": "Valid-looking event payload, no signature, no Stripe header",
+      "status": 400,
+      "body_excerpt": "{\"error\":\"Missing Stripe-Signature header\"}",
+      "verdict": "PASS"
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0
+  },
+  "overall_verdict": "PASS",
+  "failed_cases": []
+}
