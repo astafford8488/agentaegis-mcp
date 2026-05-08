@@ -22,6 +22,7 @@ export const helpSchema = z.object({
     "x402",
     "rate_limits",
     "security",
+    "built_on",
   ]).optional(),
 });
 
@@ -35,11 +36,33 @@ export interface FAQEntry {
 }
 
 export const FAQ: FAQEntry[] = [
+  // === Built on (open-source + third-party attribution) ===
+  {
+    topic: "built_on",
+    question: "Did you build the underlying scanning tools?",
+    answer: "No — and we want to be upfront about that. The actual scanning engines are open-source projects we wrap behind our MCP server: nmap (network discovery), Nuclei (web app vulnerability scanning), sslyze (SSL/TLS analysis), Semgrep (static code analysis), trufflehog (secret scanning), trivy (dependency + container audit). What we built is the integration layer, agent-callable interface, dual-rail billing engine, and orchestration. Threat intelligence comes from NVD (NIST), AbuseIPDB, AlienVault OTX, abuse.ch, and HIBP — we call their APIs and license/pay where required.",
+  },
+  {
+    topic: "built_on",
+    question: "What did AgentAegis actually build then?",
+    answer: "The dual-rail payment architecture (API key + x402 USDC micropayments on a single endpoint), the body-inspection request gating that makes per-tool billing possible on MCP's multiplexed JSON-RPC transport, the unified rail-discriminator usage logging, the customer portal at app.agentaegis.org, and the integration code that wraps each open-source engine plus normalizes its output. The architecture is patent-pending (US provisional 64/057,021).",
+  },
+  {
+    topic: "built_on",
+    question: "Open-source licenses — what's the compliance posture?",
+    answer: "We exec each open-source engine as a subprocess (CLI invocation), parse its stdout, and return the parsed result. Standard interpretation is that subprocess invocation does NOT trigger AGPL 'linking' requirements — we're calling external programs, not embedding their code. Licenses we depend on: nmap (GPLv2), Nuclei (MIT), sslyze (AGPL-3.0), Semgrep CE (LGPL-2.1), trufflehog (AGPL-3.0), trivy (Apache-2.0). The full NOTICE file is in our repo at agentaegis-mcp/NOTICE.md. We acknowledge and credit each project; if you maintain one of them and want different attribution, email admin@youraigroup.com.",
+  },
+  {
+    topic: "built_on",
+    question: "Why use a wrapper instead of running the tools myself?",
+    answer: "Three reasons: (1) you don't have to install + maintain 6 different open-source tools and their dependencies (some require Linux + specific Python versions, etc.); (2) AI agents can't easily shell out to CLI tools — MCP makes them callable through the same protocol agents already use; (3) per-call pricing means you pay only for what you actually run, instead of provisioning a Linux box you'll use intermittently. If you'd rather run the engines yourself, you absolutely can — they're all open-source and excellent. We sell convenience, agent-compatibility, and the dual-rail billing model.",
+  },
+
   // === Getting started ===
   {
     topic: "getting_started",
     question: "What is AgentAegis?",
-    answer: "An MCP server that exposes 21 cybersecurity tools — compliance assessments, vulnerability scans, code security, threat intel, incident triage, identity audits — to AI agents. Pay per call: API key with monthly budget OR x402 micropayment (USDC on Base). No subscription.",
+    answer: "A pay-per-call MCP server that lets AI agents run 22 cybersecurity workflows. We wrap battle-tested open-source tools (nmap, Nuclei, Semgrep, sslyze, trufflehog, trivy) and threat-intelligence APIs (NVD, AbuseIPDB, AlienVault OTX, abuse.ch, HIBP) behind a unified per-call billing layer with two payment rails — API key with monthly budget, or x402 USDC micropayments on Base mainnet. No subscription. Ask /help with topic=built_on for the full attribution list.",
   },
   {
     topic: "getting_started",
