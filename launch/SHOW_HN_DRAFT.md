@@ -40,9 +40,11 @@ https://www.agentaegis.org
 ```
 Hi HN,
 
-I built AgentAegis: an MCP server exposing 22 cybersecurity tools (vuln scans,
-compliance checks, threat intel, code security, identity audits) where agents
-pay per tool call. Two payment rails on a single endpoint:
+I built AgentAegis: an MCP server that lets agents pay per call to run 22
+cybersecurity workflows. It wraps battle-tested open-source engines (nmap,
+Nuclei, Semgrep, sslyze, trufflehog, trivy) and threat-intel APIs (NVD,
+AbuseIPDB, AlienVault OTX, abuse.ch, HIBP) behind a unified per-call billing
+layer. Two payment rails on a single endpoint:
 
 1. Pre-funded API key — agent operator tops up via Stripe, server debits
    stored balance per call (atomic UPDATE, no over-draw under concurrency).
@@ -76,6 +78,16 @@ self-audit"). It found 12 findings; 7 got fixed in code. The most
 embarrassing was a billing bug in my own tool dispatch wrapper that would
 have given paid tools away for free under one code path. The audit caught
 it before any real customer hit it. There's an irony I'll take.
+
+What we built vs. what we wrap:
+- Built: dual-rail billing engine, body-inspection gating, MCP integration,
+  the customer portal, the orchestration that runs each engine in a
+  sandboxed subprocess and normalizes its output to JSON. Patent provisional
+  filed (US 64/057,021) on the architecture.
+- Wrapped: the actual scanning is done by nmap, Nuclei, Semgrep, sslyze,
+  trufflehog, trivy. Threat intel from NVD (free, public), AbuseIPDB,
+  AlienVault OTX, abuse.ch, HIBP. Full attribution at
+  github.com/astafford8488/agentaegis-mcp/blob/master/NOTICE.md.
 
 Stack:
 - Node 22 + Express on Railway, Streamable HTTP MCP transport

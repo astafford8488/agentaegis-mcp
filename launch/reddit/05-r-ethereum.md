@@ -72,8 +72,10 @@ A few things worth noting that I figured out in the process:
   flow, that's a step-function improvement for non-human-mediated callers.
 
 The use case I built this for is per-call billing of API tools that
-non-human clients (no card, no email) can call. Code is at agentaegis.org
-if anyone wants to see how the integration actually looks.
+non-human clients (no card, no email) can call. The product is AgentAegis —
+a wrapper around open-source security tools (nmap, Nuclei, Semgrep, sslyze,
+trufflehog, trivy) exposed via MCP for AI agents. Code + integration details
+at agentaegis.org.
 
 Has anyone else shipped x402 to mainnet? Curious about facilitator
 choices, alternative networks (Arbitrum / Polygon / Optimism support

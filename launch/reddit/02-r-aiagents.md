@@ -19,8 +19,12 @@ Per-call billing on a single MCP endpoint (API key + per-call USDC) — three th
 ## Body
 
 ```
-Built an MCP server where agents pay per tool call. Two rails on one
-endpoint:
+Built an MCP server that lets agents pay per call to run 22 cybersecurity
+workflows. The actual scanning is done by battle-tested open-source engines
+(nmap, Nuclei, Semgrep, sslyze, trufflehog, trivy) and threat-intel APIs
+(NVD, AbuseIPDB, OTX). What I built is the integration + billing layer.
+
+Two payment rails on one endpoint:
 
   1. Pre-funded API key (Stripe-backed) — agent operator tops up, server
      debits balance per call.

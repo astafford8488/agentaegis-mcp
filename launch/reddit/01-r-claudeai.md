@@ -21,11 +21,13 @@ Built an MCP server with 22 cybersecurity tools for Claude Desktop — free tier
 ```
 Hi r/ClaudeAI,
 
-Just shipped AgentAegis — an MCP server exposing 22 cybersecurity tools that
-Claude can call as part of any conversation. Vulnerability scans, CVE
-lookups, port scanning, SSL audits, secret scanning, threat intel, dependency
-audits, identity reviews, and compliance checks for SOC 2 / ISO 27001 / HIPAA
-/ PCI DSS.
+Just shipped AgentAegis — an MCP server that lets Claude pay per call to run
+22 cybersecurity workflows. It wraps the open-source tools you already trust
+(nmap, Nuclei, Semgrep, sslyze, trufflehog, trivy) plus threat-intel APIs
+(NVD, AbuseIPDB, AlienVault OTX) behind a unified billing layer. Coverage:
+vulnerability scans, CVE lookups, port scanning, SSL audits, secret scanning,
+dependency audits, identity reviews, and compliance checks for SOC 2 / ISO
+27001 / HIPAA / PCI DSS.
 
 To use it in Claude Desktop, add this to your config:
 

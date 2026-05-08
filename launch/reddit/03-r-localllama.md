@@ -78,9 +78,11 @@ The unified rail-discriminator log table lets a single SQL query produce
 revenue reports across both rails — eliminates the rail-reconciliation pain
 in mixed payment systems.
 
-I shipped this as AgentAegis (cybersec tools for AI agents). Patent provisional
-filed on the body-inspection + dual-rail pattern. Marketing site is
-agentaegis.org if you want to see what the actual tools look like.
+I shipped this as AgentAegis — agent-callable cybersec workflows over a
+unified billing surface, where the actual scanning is done by open-source
+engines (nmap, Nuclei, Semgrep, sslyze, trufflehog, trivy). The novelty is
+in the gating and billing, not the scanning. Patent provisional filed on
+that pattern. Marketing site is agentaegis.org.
 
 The body-inspection-gating pattern is what I haven't seen elsewhere. If
 anyone has done something similar with a different RPC protocol (Jsonnet,

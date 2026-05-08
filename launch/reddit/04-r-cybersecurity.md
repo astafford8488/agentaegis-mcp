@@ -22,10 +22,14 @@ I built a security scanner. Then I scanned myself with it. Found 12 issues, fixe
 ## Body
 
 ```
-Built a hosted security scanning service. Standard stuff — CVE lookup, port
-scan, SSL audit, secret scan, dependency audit, threat intel against
-abuse.ch / AbuseIPDB / OTX, DNS / DMARC / SPF check, compliance posture
-checks, etc.
+Built a hosted security scanning service. Honest framing: it's a commercial
+wrapper around the open-source tools you already use (nmap, Nuclei, Semgrep,
+sslyze, trufflehog, trivy) plus threat-intel API aggregation (NVD, AbuseIPDB,
+OTX, abuse.ch, HIBP). The scanning itself is done by tools you already
+trust — what we built is the integration, agent-callable surface, and
+unified per-call billing. Coverage: CVE lookup, port scan, SSL audit, secret
+scan, dependency audit, threat intel, DNS / DMARC / SPF check, compliance
+posture checks, etc.
 
 Then I ran the whole thing on its own production infrastructure for a
 phase-4 self-audit before launch. Twelve findings. Seven fixed in code,
