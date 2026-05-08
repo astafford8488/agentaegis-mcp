@@ -31,7 +31,7 @@ Pay per call — card or USDC
 - The /faq snippet showing pricing examples
 
 **Voiceover:**
-> "AgentAegis is an MCP server — Model Context Protocol, the standard agents use to call tools — that exposes twenty-two cybersecurity capabilities. Vulnerability scans, compliance checks, threat intel, code security, identity audits, the works.
+> "AgentAegis is an MCP server — Model Context Protocol, the standard agents use to call tools — that lets your AI agent run twenty-two cybersecurity workflows. Vulnerability scans, compliance checks, threat intel, code security, identity audits, the works. The actual scanning is done by the open-source tools you already trust — nmap, Nuclei, Semgrep, sslyze, trufflehog, trivy. What we built is the integration layer that makes them callable from any MCP-compatible agent, plus the unified per-call billing.
 >
 > Two ways agents pay. A pre-funded API key with a monthly limit, the way most APIs work. Or per call, in USDC, signed cryptographically and settled on chain in three seconds — no account required.
 >
