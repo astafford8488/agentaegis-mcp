@@ -16,9 +16,11 @@
     "db:migrate": "node scripts/migrate.js"
   },
   "dependencies": {
+    "@coinbase/x402": "^2.1.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@sentry/node": "^10.0.0",
     "@supabase/supabase-js": "^2.50.0",
+    "@x402/core": "^2.12.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

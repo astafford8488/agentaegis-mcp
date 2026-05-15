@@ -2,6 +2,13 @@ import type { Request, Response, NextFunction } from "express";
 import { TOOL_PRICING } from "../types/mcp.js";
 import { logUsage } from "../db/usageLog.js";
 import { isDbConfigured } from "../db/client.js";
+import {
+  isCdpMode,
+  buildCdpChallenge,
+  buildCdpPaymentRequirements,
+  cdpVerify,
+  cdpSettle,
+} from "./x402Cdp.js";
 
 export interface PaymentRequirements {
   scheme: "exact";
@@ -140,6 +147,86 @@ export function require402Payment(toolName: string, resource: string, res: Respo
   });
 }
 
+/**
+ * Build a fully-qualified resource URL from the Express request. Both the
+ * legacy x402.org facilitator and the CDP facilitator require the resource
+ * field to be a full URL with scheme + host + path (the reference x402-fetch
+ * client zod-rejects path-only values before signing).
+ */
+function fullResourceUrl(req: Request): string {
+  const proto = (req.headers["x-forwarded-proto"] as string | undefined) || req.protocol || "https";
+  const host = req.headers["host"] || "agentaegis-mcp-production.up.railway.app";
+  return `${proto}://${host}${req.originalUrl}`;
+}
+
+/**
+ * CDP-mode payment processor. Mirrors processX402Payment's flow but uses
+ * v2 wire format and the SDK's HTTPFacilitatorClient. Isolated so the
+ * legacy raw-fetch path stays untouched for testnet / self-hosted
+ * facilitators.
+ */
+async function processCdpPayment(
+  req: Request,
+  res: Response,
+  toolName: string,
+  paymentHeader: string | undefined,
+  context: { target?: string; ip?: string; ua?: string }
+): Promise<{ ok: true } | { ok: false }> {
+  const requirements = buildCdpPaymentRequirements(toolName);
+  const resourceUrl = fullResourceUrl(req);
+
+  if (!paymentHeader) {
+    res.status(402).json(buildCdpChallenge(toolName, resourceUrl));
+    return { ok: false };
+  }
+
+  const paymentPayload = decodePaymentHeader(paymentHeader);
+
+  const verification = await cdpVerify(paymentPayload, requirements);
+  if (!verification.isValid) {
+    res.status(402).json({
+      ...buildCdpChallenge(toolName, resourceUrl),
+      error: `Payment invalid: ${verification.invalidReason || "Unknown"}`,
+    });
+    return { ok: false };
+  }
+
+  const settlement = await cdpSettle(paymentPayload, requirements);
+  if (!settlement.success) {
+    res.status(402).json({
+      ...buildCdpChallenge(toolName, resourceUrl),
+      error: `Settlement failed: ${settlement.error || "Unknown"}`,
+    });
+    return { ok: false };
+  }
+
+  res.setHeader(
+    "X-PAYMENT-RESPONSE",
+    Buffer.from(
+      JSON.stringify({
+        success: true,
+        transaction: settlement.txHash,
+        network: settlement.network || requirements.network,
+      })
+    ).toString("base64")
+  );
+
+  if (isDbConfigured()) {
+    await logUsage({
+      tool_name: toolName,
+      target: context.target,
+      price_usd: TOOL_PRICING[toolName],
+      paid_via: "x402",
+      payment_ref: settlement.txHash,
+      success: true,
+      request_ip: context.ip,
+      user_agent: context.ua,
+    });
+  }
+
+  return { ok: true };
+}
+
 export async function processX402Payment(
   req: Request,
   res: Response,
@@ -147,6 +234,14 @@ export async function processX402Payment(
   context: { target?: string; ip?: string; ua?: string }
 ): Promise<{ ok: true } | { ok: false }> {
   const paymentHeader = req.headers["x-payment"] as string | undefined;
+
+  // CDP-mode branch: SDK-based verify/settle, x402 v2 wire format. The legacy
+  // raw-fetch path below is unchanged and is used whenever CDP credentials
+  // are absent (testnet, self-hosted facilitators, or any future provider).
+  if (isCdpMode()) {
+    return processCdpPayment(req, res, toolName, paymentHeader, context);
+  }
+
   const requirements = buildPaymentRequirements(toolName, req.originalUrl);
 
   if (!paymentHeader) {
