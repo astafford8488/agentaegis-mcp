@@ -31,8 +31,12 @@ RUN curl -sfL "https://github.com/projectdiscovery/nuclei/releases/latest/downlo
 # Set up app
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm
+# Pin pnpm via Corepack — must match `packageManager` field in package.json.
+# Without pinning, `npm install -g pnpm` grabs whatever is "latest", which can
+# introduce stricter lockfile/override-comparison rules and fail builds whose
+# lockfile was generated with an older pnpm. The version below MUST equal the
+# version that wrote pnpm-lock.yaml.
+RUN corepack enable && corepack prepare pnpm@10.33.2 --activate
 
 # Copy and install deps
 COPY package.json pnpm-lock.yaml ./

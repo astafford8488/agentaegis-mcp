@@ -47,5 +47,6 @@
       "axios@<1.15.0": ">=1.15.0"
     }
   },
+  "packageManager": "pnpm@10.33.2",
   "license": "MIT"
 }
