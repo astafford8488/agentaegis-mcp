@@ -349,59 +349,121 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
             ? "https"
             : req.protocol;
         const fullResourceUrl = `${protocol}://${req.get("host")}${req.originalUrl}`;
-        const requirements = (await import("../auth/x402Auth.js")).buildPaymentRequirements(toolName!, fullResourceUrl);
 
-        if (!paymentHeader) {
-          // RFC: send 402 with x402 payment requirements
-          return res.status(402).json({
-            x402Version: 1,
-            error: "X-PAYMENT header required",
-            accepts: [requirements],
-          });
-        }
+        // CDP-mode branch (R-3): when both CDP_API_KEY_ID and CDP_API_KEY_SECRET
+        // env vars are set, route to the @coinbase/x402 SDK with v2 wire format
+        // (chain-id network names like "eip155:8453", `amount` field, ResourceInfo
+        // envelope, x402Version:2). Otherwise fall through to the legacy v1
+        // raw-fetch path against X402_FACILITATOR_URL. The legacy path remains
+        // the default for testnet, self-hosted facilitators, or any non-CDP
+        // provider — switching modes is purely env-var-driven, no code redeploy.
+        const x402Cdp = await import("../auth/x402Cdp.js");
+        if (x402Cdp.isCdpMode()) {
+          const cdpReqs = x402Cdp.buildCdpPaymentRequirements(toolName!);
 
-        // Verify + settle the payment
-        const x402Auth = await import("../auth/x402Auth.js");
-        const verified = await x402Auth.verifyX402Payment(paymentHeader, requirements);
-        if (!verified.isValid) {
-          return res.status(402).json({
-            x402Version: 1,
-            error: `Payment invalid: ${verified.invalidReason || "unknown"}`,
-            accepts: [requirements],
-          });
-        }
-        const settlement = await x402Auth.settleX402Payment(paymentHeader, requirements);
-        if (!settlement.success) {
-          return res.status(402).json({
-            x402Version: 1,
-            error: `Settlement failed: ${settlement.error || "unknown"}`,
-            accepts: [requirements],
-          });
-        }
-        // Tell the client the payment was settled
-        res.setHeader(
-          "X-PAYMENT-RESPONSE",
-          Buffer.from(JSON.stringify({
-            success: true,
-            transaction: settlement.txHash,
-            network: process.env.X402_NETWORK || "base-sepolia",
-            payer: verified.payerAddress,
-          })).toString("base64")
-        );
-        // Mark request as x402-paid so wrapTool skips its own payment check
-        (req as any).x402Settled = true;
-        // Log the x402-paid call
-        if (isDbConfigured()) {
-          await logUsage({
-            tool_name: toolName!,
-            target: undefined,
-            price_usd: toolPrice,
-            paid_via: "x402",
-            payment_ref: settlement.txHash,
-            success: true,
-            request_ip: req.ip,
-            user_agent: req.headers["user-agent"],
-          }).catch(() => { /* best effort */ });
+          if (!paymentHeader) {
+            return res.status(402).json(x402Cdp.buildCdpChallenge(toolName!, fullResourceUrl));
+          }
+
+          // Decode X-PAYMENT (base64 JSON envelope used by all x402 clients)
+          let paymentPayload: unknown;
+          try { paymentPayload = JSON.parse(Buffer.from(paymentHeader, "base64").toString("utf-8")); }
+          catch { try { paymentPayload = JSON.parse(paymentHeader); } catch { paymentPayload = paymentHeader; } }
+
+          const verified = await x402Cdp.cdpVerify(paymentPayload, cdpReqs);
+          if (!verified.isValid) {
+            return res.status(402).json({
+              ...x402Cdp.buildCdpChallenge(toolName!, fullResourceUrl),
+              error: `Payment invalid: ${verified.invalidReason || "unknown"}`,
+            });
+          }
+
+          const settlement = await x402Cdp.cdpSettle(paymentPayload, cdpReqs);
+          if (!settlement.success) {
+            return res.status(402).json({
+              ...x402Cdp.buildCdpChallenge(toolName!, fullResourceUrl),
+              error: `Settlement failed: ${settlement.error || "unknown"}`,
+            });
+          }
+
+          res.setHeader(
+            "X-PAYMENT-RESPONSE",
+            Buffer.from(JSON.stringify({
+              success: true,
+              transaction: settlement.txHash,
+              network: settlement.network || cdpReqs.network,
+              payer: verified.payerAddress,
+            })).toString("base64")
+          );
+          (req as any).x402Settled = true;
+          if (isDbConfigured()) {
+            await logUsage({
+              tool_name: toolName!,
+              target: undefined,
+              price_usd: toolPrice,
+              paid_via: "x402",
+              payment_ref: settlement.txHash,
+              success: true,
+              request_ip: req.ip,
+              user_agent: req.headers["user-agent"],
+            }).catch(() => { /* best effort */ });
+          }
+        } else {
+          // === Legacy v1 path (unchanged behavior — raw fetch to X402_FACILITATOR_URL) ===
+          const requirements = (await import("../auth/x402Auth.js")).buildPaymentRequirements(toolName!, fullResourceUrl);
+
+          if (!paymentHeader) {
+            // RFC: send 402 with x402 payment requirements
+            return res.status(402).json({
+              x402Version: 1,
+              error: "X-PAYMENT header required",
+              accepts: [requirements],
+            });
+          }
+
+          // Verify + settle the payment
+          const x402Auth = await import("../auth/x402Auth.js");
+          const verified = await x402Auth.verifyX402Payment(paymentHeader, requirements);
+          if (!verified.isValid) {
+            return res.status(402).json({
+              x402Version: 1,
+              error: `Payment invalid: ${verified.invalidReason || "unknown"}`,
+              accepts: [requirements],
+            });
+          }
+          const settlement = await x402Auth.settleX402Payment(paymentHeader, requirements);
+          if (!settlement.success) {
+            return res.status(402).json({
+              x402Version: 1,
+              error: `Settlement failed: ${settlement.error || "unknown"}`,
+              accepts: [requirements],
+            });
+          }
+          // Tell the client the payment was settled
+          res.setHeader(
+            "X-PAYMENT-RESPONSE",
+            Buffer.from(JSON.stringify({
+              success: true,
+              transaction: settlement.txHash,
+              network: process.env.X402_NETWORK || "base-sepolia",
+              payer: verified.payerAddress,
+            })).toString("base64")
+          );
+          // Mark request as x402-paid so wrapTool skips its own payment check
+          (req as any).x402Settled = true;
+          // Log the x402-paid call
+          if (isDbConfigured()) {
+            await logUsage({
+              tool_name: toolName!,
+              target: undefined,
+              price_usd: toolPrice,
+              paid_via: "x402",
+              payment_ref: settlement.txHash,
+              success: true,
+              request_ip: req.ip,
+              user_agent: req.headers["user-agent"],
+            }).catch(() => { /* best effort */ });
+          }
         }
       }
 
