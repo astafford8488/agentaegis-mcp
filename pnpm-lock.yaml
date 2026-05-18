@@ -69,6 +69,12 @@ importers:
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
+      '@x402/evm':
+        specifier: ^2.12.0
+        version: 2.12.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
+      '@x402/fetch':
+        specifier: ^2.12.0
+        version: 2.12.0
       tsx:
         specifier: ^4.19.0
         version: 4.21.0
@@ -1537,6 +1543,12 @@ packages:
 
   '@x402/core@2.12.0':
     resolution: {integrity: sha512-dLae9AbZRN/W7GsKe9ngqGsflnP+esE72s0GjmqDZbPihM/tlHCA6UnDdgM0qfOiDOf9iL+mmCs1OyLWpwnGLQ==}
+
+  '@x402/evm@2.12.0':
+    resolution: {integrity: sha512-kZUoHPVdBS8wlTg5K1eoh/1V0+5n9ABGRPC5DOQwRlkAwIrAFOEi2pQE+jgvOx0iM5ib2xj9gJjpldRbasX12w==}
+
+  '@x402/fetch@2.12.0':
+    resolution: {integrity: sha512-lkN/fzkZjnbJreLwI3fessKAaTKsOrrc0mFPGHWwZy0W/s8KFusLwdHuS8ul/XdUyNcYYrwcV6z0faGGSWNUNA==}
 
   abitype@1.0.6:
     resolution: {integrity: sha512-MMSqYh4+C/aVqI2RQaWqbvI4Kxo5cQV40WQ4QFtDnNzCkqChm8MuENhElmynZlO0qUy/ObkEUaXtKqYnx1Kp3A==}
@@ -3120,6 +3132,14 @@ packages:
 
   viem@2.48.8:
     resolution: {integrity: sha512-Xj3Nrt66SKtn06kczU91ELn9Difr84ZM5A62BTlaisT5lpgt058i2mBkfMZCXHGb1ocOLjzC2ztPhD0Lvky7uQ==}
+    peerDependencies:
+      typescript: '>=5.0.4'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
+  viem@2.49.3:
+    resolution: {integrity: sha512-FlIXd2kRygDxJtvjtPp74vjmyOKMjKlXXgTNdMxr8h3kcDrQ4bYb9q1MpSWyCVa3L2NJc9gSv+u8HcHYIZQUkw==}
     peerDependencies:
       typescript: '>=5.0.4'
     peerDependenciesMeta:
@@ -5812,6 +5832,20 @@ snapshots:
     dependencies:
       zod: 3.25.76
 
+  '@x402/evm@2.12.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)':
+    dependencies:
+      '@x402/core': 2.12.0
+      viem: 2.49.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - typescript
+      - utf-8-validate
+
+  '@x402/fetch@2.12.0':
+    dependencies:
+      '@x402/core': 2.12.0
+
   abitype@1.0.6(typescript@5.9.3)(zod@3.25.76):
     optionalDependencies:
       typescript: 5.9.3
@@ -6781,10 +6815,10 @@ snapshots:
   ox@0.6.7(typescript@5.9.3)(zod@3.25.76):
     dependencies:
       '@adraffy/ens-normalize': 1.11.1
-      '@noble/curves': 1.8.1
+      '@noble/curves': 1.9.7
       '@noble/hashes': 1.8.0
-      '@scure/bip32': 1.6.2
-      '@scure/bip39': 1.5.4
+      '@scure/bip32': 1.7.0
+      '@scure/bip39': 1.6.0
       abitype: 1.2.4(typescript@5.9.3)(zod@3.25.76)
       eventemitter3: 5.0.1
     optionalDependencies:
@@ -7454,6 +7488,23 @@ snapshots:
       - zod
 
   viem@2.48.8(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76):
+    dependencies:
+      '@noble/curves': 1.9.1
+      '@noble/hashes': 1.8.0
+      '@scure/bip32': 1.7.0
+      '@scure/bip39': 1.6.0
+      abitype: 1.2.3(typescript@5.9.3)(zod@3.25.76)
+      isows: 1.0.7(ws@8.18.3(bufferutil@4.1.0)(utf-8-validate@5.0.10))
+      ox: 0.14.20(typescript@5.9.3)(zod@3.25.76)
+      ws: 8.18.3(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+    optionalDependencies:
+      typescript: 5.9.3
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+      - zod
+
+  viem@2.49.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76):
     dependencies:
       '@noble/curves': 1.9.1
       '@noble/hashes': 1.8.0

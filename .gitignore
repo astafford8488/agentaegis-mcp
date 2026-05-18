@@ -5,4 +5,6 @@ dist/
 .DS_Store
 coverage/
 tmp/
-audit/x402-test/
+# x402 test secrets only — keep the scripts in git, exclude wallet/env files.
+audit/x402-test/wallets*.json
+audit/x402-test/.env*
