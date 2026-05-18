@@ -12,6 +12,7 @@
 
 import { isDbConfigured, getDb } from "../db/client.js";
 import { TOOL_PRICING } from "../types/mcp.js";
+import { isCdpMode } from "../auth/x402Cdp.js";
 
 const CHECK_TIMEOUT_MS = 2000;
 
@@ -26,6 +27,24 @@ export type HealthReport = {
   version: string;
   tools_count: number;
   timestamp: string;
+  /**
+   * Runtime config visibility — exposes whether the process detected x402
+   * facilitator credentials at startup. Diagnostic-only; helps catch the
+   * "I set env vars in Railway but the container never restarted" failure
+   * mode without needing dashboard access.
+   */
+  config: {
+    /** True iff both CDP_API_KEY_ID and CDP_API_KEY_SECRET are non-empty in process.env. */
+    cdp_mode: boolean;
+    /** Length of the secret (0 if missing). Helps detect trimmed/truncated paste. */
+    cdp_secret_len: number;
+    /** Length of the key ID (0 if missing). UUIDs are 36 chars. */
+    cdp_key_id_len: number;
+    /** Network the server will tell agents to pay on. */
+    x402_network: string;
+    /** Payee address (truncated for log safety). */
+    x402_payee_prefix: string;
+  };
   checks: {
     database: CheckResult;
     x402_facilitator: CheckResult;
@@ -132,11 +151,19 @@ export async function runHealthCheck(): Promise<HealthReport> {
   else if (!x402_facilitator.ok || !stripe.ok) status = "degraded";
   else status = "ok";
 
+  const payee = process.env.X402_PAYEE_ADDRESS || "";
   return {
     status,
     version: "0.3.0",
     tools_count: Object.keys(TOOL_PRICING).length,
     timestamp: new Date().toISOString(),
+    config: {
+      cdp_mode: isCdpMode(),
+      cdp_secret_len: (process.env.CDP_API_KEY_SECRET || "").length,
+      cdp_key_id_len: (process.env.CDP_API_KEY_ID || "").length,
+      x402_network: process.env.X402_NETWORK || "(unset)",
+      x402_payee_prefix: payee ? `${payee.slice(0, 6)}…${payee.slice(-4)}` : "(unset)",
+    },
     checks: { database, x402_facilitator, stripe },
   };
 }
