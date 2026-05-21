@@ -124,6 +124,22 @@ Earlier env-var debugging revealed `BETA_SIGNUP_FROM` was set on Vercel but pull
 - Enterprise tier (custom limits, dedicated support)
 - Multi-region deployment
 
+### Phase 10 — Managed Security Audit Agent (backlog — evaluate after launch traction)
+
+A new product tier: an autonomous Claude Agent (Agent SDK / Managed Agents) that
+connects to the AgentAegis MCP tools, picks and chains them itself, and returns a
+complete security audit. Customers pay a flat $49–299 per audit instead of
+orchestrating per-tool calls — higher margin, zero customer orchestration effort,
+broader market (anyone who needs an assessment, not just agent builders).
+
+- **Status:** backlog proposal. Does NOT disrupt Phase 8 launch or Phase 9 plans.
+- **Hard requirement before any build:** target ownership verification (DNS TXT
+  record or HTTP meta token) must gate *every* scan. Running scans against
+  infrastructure the customer doesn't own is a CFAA exposure, and AgentAegis is
+  the party running the scan.
+- Test the audit-agent offer only *after* the initial per-tool launch has traction.
+- Full proposal + corrected economics: `wiki/pages/agentaegis-audit-agent.md`
+
 ---
 
 ## 🔐 Credentials index
