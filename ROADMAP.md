@@ -115,10 +115,41 @@ Earlier env-var debugging revealed `BETA_SIGNUP_FROM` was set on Vercel but pull
 - MCP registry submissions (modelcontextprotocol.io directory)
 - Cold outreach list — 50 agent builders, personalized DMs
 
-### Phase 9+ — Post-launch growth
+### Phase 9.0 — Agent identity + scan persistence (substrate for Phase 9)
 
+The current per-call atomic model breaks every multi-step workflow. Agents that
+pay via x402 have no persistent identity across calls — only a per-call tx hash.
+Without an identity primitive, no tool can reference a prior scan, no audit can
+compose findings across multiple tools, and the per-tool product ceiling is
+fundamentally low. Phase 9.0 ships the substrate that turns per-call into
+per-workflow.
+
+- `aegis_agents` table — first-class identity anchored on customer_id, wallet
+  address (cryptographically authenticated via x402 signatures), or anonymous
+  session for free-tier exploration
+- `aegis_scans` table — per-call output persistence with summary/full-output
+  tiering and customer-controlled retention (default 90 days)
+- Three new **free** tools: `agent_whoami`, `agent_history`, `agent_scan_get`
+- `previous_scan_id` parameter added to existing tools — chained workflows
+- Composite tools become possible: `vuln_prioritize(scan_ids[])`,
+  `audit_report_generate(scan_ids[])`, etc.
+- Privacy: customer-controlled deletion + export pages (GDPR Art. 15/17 satisfied
+  by the schema, not bolted on), default 90-day retention, encrypted full_output
+
+**Patent angle:** persistent agent identity derived from cryptographic payment
+signatures may be a fourth inventive aspect worth filing in the nonprovisional
+(US 64/057,021 — hard cutoff 2027-05-04).
+
+Full design + schema + flow: `wiki/pages/agentaegis-agent-identity.md`
+
+### Phase 9 — Capability expansion (builds on Phase 9.0)
+
+- Agent-specific security tools (prompt injection scanner, MCP server audit,
+  x402 integration audit)
+- Web3 security expansion (slither, echidna, wallet screen, onchain analyze)
+- Container + IaC + cloud posture (trivy image, kube-bench, prowler, scoutsuite,
+  checkov)
 - Cloud integration breadth (Azure, GCP, Datadog, Cloudflare, CloudWatch)
-- Container security tools (trivy image scan, kube-bench)
 - More compliance frameworks (FedRAMP, GDPR-specific, NIST 800-53)
 - White-label / partner program
 - Enterprise tier (custom limits, dedicated support)
