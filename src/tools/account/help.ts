@@ -141,12 +141,12 @@ curl -H "Authorization: Bearer aegis_..." \\
   {
     topic: "tools",
     question: "What tools are available?",
-    answer: "21 tools across 7 categories: compliance (5), vuln management (5), code security (3), blue team (4), identity (2), offensive (1), account (1). Get the full priced catalog at GET /pricing.",
+    answer: "22 tools across 7 categories: compliance (5), vuln management (5), code security (3), blue team (4), identity (2), offensive (1), account (2). Get the full priced catalog at GET /pricing.",
   },
   {
     topic: "tools",
     question: "What does each tool cost?",
-    answer: `Cheapest: cve_lookup ($0.10). Most expensive: vuln_scan_web_app ($1.50). Free: account_balance, help. Full table available at GET /pricing or by calling the help tool with topic=tools.`,
+    answer: `Paid tools range $1.00–$5.00 per call (single-source lookups $1, multi-source/compute $2, deep scans $3, heaviest scans + full reports $5). Free: account_balance, help. Full table below or at GET /pricing.`,
     example: JSON.stringify(
       Object.entries(TOOL_PRICING)
         .sort((a, b) => a[1] - b[1])

@@ -3,27 +3,42 @@ export interface ToolPricing {
   price_usd: number;
 }
 
+// Pricing floor is $1.00 per paid call. Rationale: as of mid-2026, x402
+// economic volume sits decisively at $1+ (95% of on-chain volume per
+// Chainalysis); sub-$1 micropayments collapsed to ~4%. Pricing below $1
+// targets a dead segment. Tiers below scale by compute + data cost:
+//   $1 — single-source lookups (one API / one fast engine pass)
+//   $2 — multi-source aggregation or real compute (Semgrep, trufflehog, etc.)
+//   $3 — deeper active scans
+//   $5 — heaviest scans / full report synthesis
 export const TOOL_PRICING: Record<string, number> = {
-  compliance_framework_check: 0.50,
-  evidence_collect: 0.25,
-  control_gap_analysis: 0.50,
-  audit_report_generate: 1.00,
-  policy_generate: 0.50,
-  vuln_scan_network: 1.00,
-  vuln_scan_web_app: 1.50,
-  vuln_prioritize: 0.25,
-  cve_lookup: 0.10,
-  ssl_tls_audit: 0.25,
-  sast_scan: 1.00,
-  secret_scan: 0.50,
-  dependency_audit: 0.50,
-  incident_triage: 0.75,
-  threat_intel_lookup: 0.25,
-  dns_security_check: 0.25,
-  email_security_audit: 0.50,
-  access_review: 0.50,
-  mfa_audit: 0.25,
-  credential_check: 0.50,
+  // $1 — single-source lookups
+  cve_lookup: 1.00,
+  vuln_prioritize: 1.00,
+  ssl_tls_audit: 1.00,
+  dns_security_check: 1.00,
+  mfa_audit: 1.00,
+  evidence_collect: 1.00,
+  access_review: 1.00,
+
+  // $2 — multi-source aggregation / real compute
+  compliance_framework_check: 2.00,
+  control_gap_analysis: 2.00,
+  policy_generate: 2.00,
+  secret_scan: 2.00,
+  dependency_audit: 2.00,
+  email_security_audit: 2.00,
+  credential_check: 2.00,
+  threat_intel_lookup: 2.00,
+
+  // $3 — deeper active scans
+  incident_triage: 3.00,
+  vuln_scan_network: 3.00,
+
+  // $5 — heaviest scans / full report synthesis
+  vuln_scan_web_app: 5.00,
+  sast_scan: 5.00,
+  audit_report_generate: 5.00,
 
   // Free utility tools (always 0)
   account_balance: 0,
