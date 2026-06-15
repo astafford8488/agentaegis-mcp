@@ -302,15 +302,24 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
   // === Admin routes ===
   app.use("/admin", buildAdminRouter());
 
-  // Scan job status (for async scans)
+  // Scan job status (for async scans) — requires API-key auth + ownership check.
   app.get("/v1/jobs/:jobId", apiKeyAuth, async (req: AuthenticatedRequest, res: Response) => {
     if (!isDbConfigured()) return res.status(503).json({ error: "Database not configured" });
+
+    // Require authentication. apiKeyAuth is OPTIONAL middleware (a request with no
+    // Authorization header passes through with req.apiKey undefined). Without this
+    // guard, the ownership check below — previously `if (req.apiKey && ...)` — was
+    // skipped for unauthenticated callers, so anyone who knew a job UUID could read
+    // another customer's scan results (IDOR). Require a valid key first.
+    if (!req.apiKey) return res.status(401).json({ error: "Authentication required" });
 
     const jobId = req.params.jobId as string;
     const job = await getJob(jobId);
     if (!job) return res.status(404).json({ error: "Job not found" });
 
-    if (req.apiKey && job.customer_id !== req.apiKey.customer_id) {
+    // Ownership: only the customer that created the job may read it. Jobs with a
+    // null customer_id (e.g. anonymous/x402) are not readable via this endpoint.
+    if (job.customer_id !== req.apiKey.customer_id) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
