@@ -105,15 +105,65 @@ Earlier env-var debugging revealed `BETA_SIGNUP_FROM` was set on Vercel but pull
 
 ---
 
+## 🧭 Strategic positioning (set 2026-05-21, after investor meetings + June 2026 x402 landscape research)
+
+**AgentAegis is evolving from "MCP cybersecurity tool catalog" → "the security & trust
+layer for agentic commerce."** The tool catalog (shipped) is the proof and the revenue
+floor. The bigger, more defensible product is the **trust verdict**: when an agent is
+about to pay or call an unknown endpoint, AgentAegis answers *"is this safe to transact
+with?"* — because we already run the scans AND sit on the payment rail. That's
+"Stripe Radar for agentic commerce," and the flagship tool (`vet_endpoint`) gates a
+payment, which is exactly what the new provisional patent covers.
+
+Validated by the June 2026 research (full report in the PitchIQ AA workspace wiki:
+"x402 & Agentic Commerce Landscape"): x402 is now a Linux Foundation standard backed by
+Visa, Mastercard, Stripe, Google, AWS, Microsoft; economic volume is at $1+ (95%);
+the MCP-monetization stack (Vercel x402-mcp, Coinbase Bazaar, AWS Bedrock AgentCore) is
+production-ready; and **no incumbent yet owns the agent-facing trust/safety verdict.**
+
+Two product layers:
+- **L1 — Tools (shipped):** 20 paid cybersecurity tools + dual-rail billing.
+- **L2 — Trust layer (the thesis):** `vet_endpoint`, `scan_mcp_plugin`/`scan_skill`,
+  `kya_verify`, on-chain agent/wallet reputation. Each consumes L1 tools to produce a
+  composite verdict. This is what gets listed in the Bazaar, submitted to ChatGPT, and
+  pitched to investors on usage metrics.
+
+Master strategy + site information-architecture + distribution plan:
+`wiki/pages/agentaegis-positioning-trust-layer.md`.
+
 ## 🛣 Next phases (un-shipped)
 
-### Phase 8 — Public launch prep (~1–2 days) — **next pick**
+### Phase 8 — Public launch prep (~1–2 days) — **next pick (blocked on R-3 mainnet test)**
 
-- Demo video (3 min, 2 demos + sign-up flow)
-- Show HN draft — "I built an MCP server for cybersecurity tools — pay per call via card or USDC"
+- 🔴 **R-3 mainnet x402 payment test** — fund throwaway EOA, run end-to-end on Base.
+  Blocks launch AND unlocks Bazaar eligibility (≥1 CDP-settled payment). THE gate.
+- ✅ Repricing to $1+ tiers — DONE 2026-05-21 (commit on master).
+- Demo video (3 min, 2 demos + sign-up flow) — now shows real mainnet x402 settlement
+- Show HN draft — "per-call billing for MCP servers using HTTP 402 + ERC-3009"
 - X/Twitter thread — "AgentAegis audited itself" (Phase 4 story)
-- MCP registry submissions (modelcontextprotocol.io directory)
+- MCP registry submission (modelcontextprotocol.io directory)
 - Cold outreach list — 50 agent builders, personalized DMs
+
+### Phase 8.5 — Distribution, grants, trust-layer foundation (from June 2026 research + PIQ backlog)
+
+Runs alongside / right after launch. Tasks tracked on the PIQ AA board.
+
+- **x402 Bazaar listing** (PIQ, due 2026-06-28) — requires ≥1 CDP-settled payment;
+  early on-chain history compounds into a discovery-ranking moat. Auto-eligible once
+  R-3 passes.
+- **Confirm CDP Facilitator free tier** (1k free settlements/mo + gas sponsorship) —
+  the CDP migration shipped this session; verify we're on the free tier.
+- **Submit to ChatGPT via Apps SDK** (PIQ, due 2026-06-28) — distribution surface.
+- **Circle USDC Developer Grant** (PIQ, due 2026-07-12) — circle.questbook.app.
+- **Base Builder Grants** (PIQ, due 2026-07-12) — retroactive 1–5 ETH + Builder Score.
+- **File NEW provisional patent** — endpoint-safety verdict gating a per-invocation
+  agent payment (PIQ, due 2026-07-15). Captures the L2 trust-layer thesis before a
+  competitor does.
+- **Brief patent attorney** on the security-verdict claim + de-risk the existing
+  provisional (PIQ, due 2026-08-01).
+- **Landing-page positioning overhaul** — reframe hero from "22 tools" to the trust
+  layer; add per-tool/use-case landing pages with demos (`/vet-endpoint` flagship,
+  `/scan-mcp`, `/kya`, `/agent-reputation`). See the positioning wiki page for the IA.
 
 ### Phase 9.0 — Agent identity + scan persistence (substrate for Phase 9)
 
@@ -142,18 +192,32 @@ signatures may be a fourth inventive aspect worth filing in the nonprovisional
 
 Full design + schema + flow: `wiki/pages/agentaegis-agent-identity.md`
 
-### Phase 9 — Capability expansion (builds on Phase 9.0)
+### Phase 9 — The trust layer (L2) + capability expansion (builds on Phase 9.0)
 
-- Agent-specific security tools (prompt injection scanner, MCP server audit,
-  x402 integration audit)
-- Web3 security expansion (slither, echidna, wallet screen, onchain analyze)
-- Container + IaC + cloud posture (trivy image, kube-bench, prowler, scoutsuite,
-  checkov)
+**The L2 trust layer is the product moat.** These compose the existing L1 tools into
+agent-facing verdicts. Prioritized from the PIQ AA board:
+
+- **`vet_endpoint`** (PIQ, due 2026-08-15) — composite trust verdict for an endpoint an
+  agent is about to pay/call: SSL + domain age + threat intel + breach exposure +
+  on-chain reputation → single PROCEED / CAUTION / BLOCK verdict. **Flagship.** Gates a
+  payment → core of the new patent.
+- **`scan_mcp_plugin` / `scan_skill`** (PIQ, due 2026-07-31) — supply-chain scanner for
+  agent tools: before an agent installs/trusts an MCP server or skill, scan it for
+  malicious patterns, exfiltration, prompt-injection sinks.
+- **`kya_verify`** (PIQ, due 2026-08-15) — Know-Your-Agent attestation built on
+  Mastercard's Verifiable Intent open spec; pairs with Visa TAP / Web Bot Auth.
+- **On-chain agent/wallet reputation scoring** (PIQ, due 2026-08-15) — the "AgentRadar"
+  piece; feeds `vet_endpoint` and stands alone as a reputation lookup.
+- **Tier-A parity tools** (PIQ, due 2026-07-31) — `ioc_enrich`, `hash_reputation`,
+  `kev_lookup`, `cve_risk_score`, etc. — table-stakes coverage that also feeds verdicts.
+
+Secondary capability expansion (lower priority than the trust layer):
+
+- Web3 security (slither, echidna, wallet screen, onchain analyze)
+- Container + IaC + cloud posture (trivy image, kube-bench, prowler, scoutsuite, checkov)
 - Cloud integration breadth (Azure, GCP, Datadog, Cloudflare, CloudWatch)
 - More compliance frameworks (FedRAMP, GDPR-specific, NIST 800-53)
-- White-label / partner program
-- Enterprise tier (custom limits, dedicated support)
-- Multi-region deployment
+- White-label / partner program · Enterprise tier · Multi-region deployment
 
 ### Phase 10 — Managed Security Audit Agent (backlog — evaluate after launch traction)
 
