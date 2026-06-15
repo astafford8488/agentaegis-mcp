@@ -34,6 +34,7 @@
 
 import { facilitator } from "@coinbase/x402";
 import { HTTPFacilitatorClient } from "@x402/core/server";
+import { encodePaymentRequiredHeader } from "@x402/core/http";
 import { TOOL_PRICING } from "../types/mcp.js";
 
 /** Map v1 short-name networks → v2 chain-id format. */
@@ -132,6 +133,19 @@ export function buildCdpChallenge(toolName: string, resourceUrl: string): CdpCha
     },
     accepts: [buildCdpPaymentRequirements(toolName)],
   };
+}
+
+/**
+ * Encode the v2 challenge for the `PAYMENT-REQUIRED` response header.
+ *
+ * CRITICAL: the v2 @x402/fetch client reads the PaymentRequired from a base64
+ * `PAYMENT-REQUIRED` *header* (via getPaymentRequiredResponse). It only reads
+ * the *body* when x402Version === 1. So a v2 challenge sent only in the JSON
+ * body is rejected with "Invalid payment required response". We must set this
+ * header on every v2 (CDP-mode) 402. The encoder is base64(JSON(challenge)).
+ */
+export function encodeCdpChallengeHeader(toolName: string, resourceUrl: string): string {
+  return encodePaymentRequiredHeader(buildCdpChallenge(toolName, resourceUrl) as never);
 }
 
 export interface CdpVerifyResult {

@@ -24,7 +24,7 @@ import { Sentry } from "../observability/sentry.js";
 
 export function buildHttpApp(buildServer: () => McpServer): Express {
   const app = express();
-  app.use(cors({ origin: "*", exposedHeaders: ["Mcp-Session-Id", "X-PAYMENT-RESPONSE"] }));
+  app.use(cors({ origin: "*", exposedHeaders: ["Mcp-Session-Id", "X-PAYMENT-RESPONSE", "PAYMENT-REQUIRED", "PAYMENT-RESPONSE"] }));
 
   // === Stripe webhook (raw body required for signature verification) ===
   // This route MUST be registered before express.json() so the body stays raw.
@@ -336,7 +336,10 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
       const requiresPayment = isToolCall && toolPrice > 0 && !req.apiKey;
 
       if (requiresPayment && process.env.X402_PAYEE_ADDRESS) {
-        const paymentHeader = req.headers["x-payment"] as string | undefined;
+        // The v2 x402 client (@x402/fetch) sends the signed payment in the
+        // PAYMENT-SIGNATURE header; the legacy v1 client uses X-PAYMENT. Accept
+        // either so both rails work on the same endpoint.
+        const paymentHeader = (req.headers["payment-signature"] || req.headers["x-payment"]) as string | undefined;
         // Railway / Vercel terminate TLS at the edge, so req.protocol comes
         // through as "http" even when the user reached us over HTTPS. The
         // resource URL is bound into the EIP-712 signed payload — if we
@@ -362,6 +365,8 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
           const cdpReqs = x402Cdp.buildCdpPaymentRequirements(toolName!);
 
           if (!paymentHeader) {
+            // v2 client reads the challenge from the PAYMENT-REQUIRED header, not the body.
+            res.setHeader("PAYMENT-REQUIRED", x402Cdp.encodeCdpChallengeHeader(toolName!, fullResourceUrl));
             return res.status(402).json(x402Cdp.buildCdpChallenge(toolName!, fullResourceUrl));
           }
 
@@ -372,6 +377,7 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
 
           const verified = await x402Cdp.cdpVerify(paymentPayload, cdpReqs);
           if (!verified.isValid) {
+            res.setHeader("PAYMENT-REQUIRED", x402Cdp.encodeCdpChallengeHeader(toolName!, fullResourceUrl));
             return res.status(402).json({
               ...x402Cdp.buildCdpChallenge(toolName!, fullResourceUrl),
               error: `Payment invalid: ${verified.invalidReason || "unknown"}`,
@@ -380,6 +386,7 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
 
           const settlement = await x402Cdp.cdpSettle(paymentPayload, cdpReqs);
           if (!settlement.success) {
+            res.setHeader("PAYMENT-REQUIRED", x402Cdp.encodeCdpChallengeHeader(toolName!, fullResourceUrl));
             return res.status(402).json({
               ...x402Cdp.buildCdpChallenge(toolName!, fullResourceUrl),
               error: `Settlement failed: ${settlement.error || "unknown"}`,
