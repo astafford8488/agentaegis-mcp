@@ -87,7 +87,7 @@ curl -X POST https://agentaegis-mcp-production.up.railway.app/v1/customers/<id>/
     topic: "authentication",
     question: "How do I authenticate API calls?",
     answer: "Send the API key as a Bearer token in the Authorization header. Keys start with aegis_ and are issued by POST /v1/customers/:id/api-keys.",
-    example: `Authorization: Bearer aegis_z9J5w5_medG2zzrhYD2WD-q0v9wSgD5OsGlq3-AUrmg`,
+    example: `Authorization: Bearer aegis_YOUR_API_KEY_HERE`,
   },
   {
     topic: "authentication",
