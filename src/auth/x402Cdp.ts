@@ -51,8 +51,22 @@ const V2_NETWORK_TO_USDC: Record<string, string> = {
   "eip155:1": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 };
 
-/** USDC EIP-712 typed-data domain (same across testnet/mainnet for Circle's contract). */
-const USDC_EIP712_DOMAIN = { name: "USDC", version: "2" };
+/**
+ * USDC EIP-712 typed-data domain, keyed by v2 network. The domain `name` is
+ * NETWORK-SPECIFIC and must equal the token contract's on-chain name() exactly,
+ * or transferWithAuthorization reverts on signature recovery ("invalid signature").
+ *   - Base mainnet (eip155:8453):  name() = "USD Coin"  ← NOT "USDC"
+ *   - Base Sepolia (eip155:84532): name() = "USDC"
+ *   - Ethereum     (eip155:1):     name() = "USD Coin"
+ * These match @x402/evm's DEFAULT_STABLECOINS, which is what the signing client
+ * (ExactEvmScheme) uses — so server and client agree on the domain.
+ */
+const NETWORK_EIP712_DOMAIN: Record<string, { name: string; version: string }> = {
+  "eip155:8453": { name: "USD Coin", version: "2" },
+  "eip155:84532": { name: "USDC", version: "2" },
+  "eip155:1": { name: "USD Coin", version: "2" },
+};
+const DEFAULT_EIP712_DOMAIN = { name: "USD Coin", version: "2" };
 
 let cachedClient: HTTPFacilitatorClient | null = null;
 
@@ -109,7 +123,7 @@ export function buildCdpPaymentRequirements(toolName: string): CdpPaymentRequire
     amount,
     payTo,
     maxTimeoutSeconds: 60,
-    extra: USDC_EIP712_DOMAIN,
+    extra: NETWORK_EIP712_DOMAIN[network] || DEFAULT_EIP712_DOMAIN,
   };
 }
 
