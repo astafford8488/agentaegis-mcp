@@ -133,10 +133,15 @@ Master strategy + site information-architecture + distribution plan:
 
 ## 🛣 Next phases (un-shipped)
 
-### Phase 8 — Public launch prep (~1–2 days) — **next pick (blocked on R-3 mainnet test)**
+### Phase 8 — Public launch prep (~1–2 days) — **UNBLOCKED, next pick**
 
-- 🔴 **R-3 mainnet x402 payment test** — fund throwaway EOA, run end-to-end on Base.
-  Blocks launch AND unlocks Bazaar eligibility (≥1 CDP-settled payment). THE gate.
+- ✅ **R-3 mainnet x402 payment test — PASSED.** Full end-to-end on Base mainnet via
+  the CDP facilitator: 402 (v2 PAYMENT-REQUIRED header) → ERC-3009 sign → PAYMENT-SIGNATURE
+  → CDP verify → on-chain settlement → tool executed (HTTP 200). $1 USDC moved payer
+  0x8c82 → receiver 0x3347. Settlement tx: `0xed08f420324458a0146a7ca8bb45c56930f37425b3b7112e0bce5a63446d5b9c`.
+  Closes the launch gate AND satisfies x402 Bazaar eligibility (≥1 CDP-settled payment).
+  Fixes that got it green: v2 wire protocol (PAYMENT-REQUIRED + PAYMENT-SIGNATURE headers)
+  and network-specific EIP-712 domain (Base mainnet USDC = "USD Coin", not "USDC").
 - ✅ Repricing to $1+ tiers — DONE 2026-05-21 (commit on master).
 - Demo video (3 min, 2 demos + sign-up flow) — now shows real mainnet x402 settlement
 - Show HN draft — "per-call billing for MCP servers using HTTP 402 + ERC-3009"
