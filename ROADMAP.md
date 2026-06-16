@@ -146,7 +146,9 @@ Master strategy + site information-architecture + distribution plan:
 - Demo video (3 min, 2 demos + sign-up flow) — now shows real mainnet x402 settlement
 - Show HN draft — "per-call billing for MCP servers using HTTP 402 + ERC-3009"
 - X/Twitter thread — "AgentAegis audited itself" (Phase 4 story)
-- MCP registry submission (modelcontextprotocol.io directory)
+- ✅ **MCP registry submission — PUBLISHED 2026-06-16.** Live in the official
+  registry as `io.github.astafford8488/agentaegis` v0.3.0 (via `mcp-publisher publish`
+  from the repo dir; `server.json` manifest). Re-publish on each version bump.
 - Cold outreach list — 50 agent builders, personalized DMs
 
 ### Phase 8.5 — Distribution, grants, trust-layer foundation (from June 2026 research + PIQ backlog)
