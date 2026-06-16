@@ -153,9 +153,12 @@ Master strategy + site information-architecture + distribution plan:
 
 Runs alongside / right after launch. Tasks tracked on the PIQ AA board.
 
-- **x402 Bazaar listing** (PIQ, due 2026-06-28) — requires ≥1 CDP-settled payment;
-  early on-chain history compounds into a discovery-ranking moat. Auto-eligible once
-  R-3 passes.
+- ✅ **x402 Bazaar listing — SHIPPED + activated.** Discovery extension implemented
+  (`src/auth/bazaarCatalog.ts` declares all 20 tools; `buildCdpChallenge` attaches
+  `extensions.bazaar`, best-effort). Verified live in the production challenge, and
+  activated by a mainnet settlement carrying the metadata (tx `0xf32c01b3…`). Each
+  tool indexes the first time it's paid for. Verify the live index via the CDP
+  dashboard or an agent's Bazaar `search_resources` (querying needs CDP creds).
 - **Confirm CDP Facilitator free tier** (1k free settlements/mo + gas sponsorship) —
   the CDP migration shipped this session; verify we're on the free tier.
 - **Submit to ChatGPT via Apps SDK** (PIQ, due 2026-06-28) — distribution surface.
