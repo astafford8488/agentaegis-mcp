@@ -42,7 +42,7 @@ export async function chargeApiKey(
   apiKey: APIKey,
   toolName: string,
   priceUsd: number,
-  context: { target?: string; success: boolean; error_message?: string; ip?: string; ua?: string }
+  context: { target?: string; success: boolean; error_message?: string; ip?: string; ua?: string; agentId?: string }
 ): Promise<{ ok: boolean; reason?: string }> {
   const ok = await checkApiKeyBudget(apiKey, priceUsd);
   if (!ok) {
@@ -59,6 +59,7 @@ export async function chargeApiKey(
   await logUsage({
     customer_id: apiKey.customer_id,
     api_key_id: apiKey.id,
+    agent_id: context.agentId,
     tool_name: toolName,
     target: context.target,
     price_usd: priceUsd,

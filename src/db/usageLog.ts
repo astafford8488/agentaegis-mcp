@@ -4,6 +4,7 @@ import type { UsageLogEntry } from "./types.js";
 export async function logUsage(input: {
   customer_id?: string;
   api_key_id?: string;
+  agent_id?: string;
   tool_name: string;
   target?: string;
   price_usd: number;
@@ -17,6 +18,7 @@ export async function logUsage(input: {
   await getDb().from("aegis_usage_log").insert({
     customer_id: input.customer_id || null,
     api_key_id: input.api_key_id || null,
+    agent_id: input.agent_id || null,
     tool_name: input.tool_name,
     target: input.target || null,
     price_usd: input.price_usd,

@@ -12,17 +12,21 @@ export interface ScanRow {
   status: "running" | "complete" | "failed";
   summary: unknown;
   full_output: unknown;
+  previous_scan_id: string | null;
   started_at: string;
   completed_at: string | null;
   retention_until: string;
 }
 
 /** Open a scan row in `running` state. Returns the scan id, or null on failure
- *  (persistence is best-effort and must never block the paid call). */
+ *  (persistence is best-effort and must never block the paid call). `previousScanId`
+ *  records chained-workflow lineage; callers must have already verified it belongs
+ *  to the same agent. */
 export async function createScan(input: {
   agentId: string;
   toolName: string;
   target?: string;
+  previousScanId?: string;
 }): Promise<string | null> {
   const { data, error } = await getDb()
     .from("aegis_scans")
@@ -30,6 +34,7 @@ export async function createScan(input: {
       agent_id: input.agentId,
       tool_name: input.toolName,
       target: input.target || null,
+      previous_scan_id: input.previousScanId || null,
       status: "running",
     })
     .select("id")

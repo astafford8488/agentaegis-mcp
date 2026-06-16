@@ -55,12 +55,16 @@ CREATE TABLE IF NOT EXISTS aegis_scans (
     CHECK (status IN ('running','complete','failed')),
   summary         jsonb,                                    -- always populated (small)
   full_output     jsonb,                                    -- opt-in (large)
+  -- chained-workflow lineage: the prior scan this call built on. Self-referential;
+  -- SET NULL (not CASCADE) so pruning a parent never silently deletes descendants.
+  previous_scan_id uuid REFERENCES aegis_scans(id) ON DELETE SET NULL,
   retention_until timestamptz NOT NULL DEFAULT (now() + interval '90 days')
 );
 
 CREATE INDEX IF NOT EXISTS idx_scans_agent_recent ON aegis_scans (agent_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_scans_target       ON aegis_scans (agent_id, target);
 CREATE INDEX IF NOT EXISTS idx_scans_retention    ON aegis_scans (retention_until);
+CREATE INDEX IF NOT EXISTS idx_scans_lineage      ON aegis_scans (previous_scan_id) WHERE previous_scan_id IS NOT NULL;
 
 -- ── link usage_log to agents (nullable, no backfill required) ────────────────
 ALTER TABLE aegis_usage_log ADD COLUMN IF NOT EXISTS agent_id uuid REFERENCES aegis_agents(id) ON DELETE SET NULL;

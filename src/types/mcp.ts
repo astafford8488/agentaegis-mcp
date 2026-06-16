@@ -43,4 +43,9 @@ export const TOOL_PRICING: Record<string, number> = {
   // Free utility tools (always 0)
   account_balance: 0,
   help: 0,
+
+  // Free Phase 9.0 identity tools (always 0)
+  agent_whoami: 0,
+  agent_history: 0,
+  agent_scan_get: 0,
 };
