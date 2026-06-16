@@ -52,7 +52,10 @@ export function buildAdminRouter(): Router {
       const { facilitator } = await import("@coinbase/x402");
       const { HTTPFacilitatorClient } = await import("@x402/core/server");
       const { withBazaar } = await import("@x402/extensions/bazaar");
-      const client = withBazaar(new HTTPFacilitatorClient(facilitator)) as unknown as {
+      // Cast through `never`: @x402/extensions resolves @x402/core@2.15.0 while
+      // we use 2.12.0 — structurally identical clients, but TS sees a private-field
+      // nominal mismatch. Runtime is fine (both expose createAuthHeaders + url).
+      const client = withBazaar(new HTTPFacilitatorClient(facilitator) as never) as unknown as {
         extensions: { bazaar: { listResources: (p: Record<string, unknown>) => Promise<unknown>; search: (p: Record<string, unknown>) => Promise<unknown> } };
       };
       const payTo = process.env.X402_PAYEE_ADDRESS || "";
