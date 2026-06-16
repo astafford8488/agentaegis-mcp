@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.astafford8488/agentaegis",
+  "title": "AgentAegis",
+  "description": "Pay-per-call cybersecurity for AI agents — 22 tools (vuln scans, CVE lookups, threat intel, compliance, code security) over MCP, billed per call via API key or x402 USDC on Base. Free discovery tier.",
+  "repository": {
+    "url": "https://github.com/astafford8488/agentaegis-mcp",
+    "source": "github"
+  },
+  "version": "0.3.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://agentaegis-mcp-production.up.railway.app/mcp"
+    }
+  ]
+}
