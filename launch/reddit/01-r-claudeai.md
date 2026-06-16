@@ -8,7 +8,7 @@
 ## Title
 
 ```
-Built an MCP server with 22 cybersecurity tools for Claude Desktop — free tier for discovery
+Built an MCP server with 20 cybersecurity tools for Claude Desktop — free tier for discovery
 ```
 
 **Why this title:**
@@ -22,7 +22,7 @@ Built an MCP server with 22 cybersecurity tools for Claude Desktop — free tier
 Hi r/ClaudeAI,
 
 Just shipped AgentAegis — an MCP server that lets Claude pay per call to run
-22 cybersecurity workflows. It wraps the open-source tools you already trust
+20 cybersecurity workflows. It wraps the open-source tools you already trust
 (nmap, Nuclei, Semgrep, sslyze, trufflehog, trivy) plus threat-intel APIs
 (NVD, AbuseIPDB, AlienVault OTX) behind a unified billing layer. Coverage:
 vulnerability scans, CVE lookups, port scanning, SSL audits, secret scanning,
@@ -46,7 +46,7 @@ Restart Claude Desktop and the tools show up in the slash menu.
 
 Free tier covers tools/list, help, and account_balance so you can browse
 what's available and check pricing without spending anything. Paid tools
-start at $0.10/call. No subscription, no monthly minimum.
+start at $1/call. No subscription, no monthly minimum.
 
 A few things worth mentioning:
 
@@ -55,7 +55,7 @@ A few things worth mentioning:
   we parse it server-side before routing to free / API-key / x402 rails.
 
 - Atomic SQL UPDATEs prevent over-draw under concurrent calls (50 parallel
-  $0.10 calls against a $0.20 balance correctly stop after 2).
+  $1 calls against a $2 balance correctly stop after 2).
 
 - We ran AgentAegis on AgentAegis itself for a self-audit phase. Found 12
   issues; 7 fixed in code. Most embarrassing: a billing bug in our own
@@ -78,6 +78,8 @@ For anyone curious where to actually try it: https://www.agentaegis.org
 Pricing is at /pricing on the same domain. The MCP /faq endpoint mirrors
 all the help text the in-tool 'help' command returns, so you can read
 through it without setting up the integration first.
+
+Now listed in the official MCP registry (io.github.astafford8488/agentaegis).
 ```
 
 (Putting the link in a comment, not the body, is the Reddit norm — looks less promotional and survives subs that auto-filter promotional posts.)

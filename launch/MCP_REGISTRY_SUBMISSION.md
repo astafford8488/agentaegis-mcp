@@ -2,7 +2,13 @@
 
 The MCP ecosystem has multiple directories. They have different policies — some accept hosted/paid services, some require open-source self-hostable servers. AgentAegis is a hosted, paid service, so the submission strategy varies per directory.
 
-This document is the **canonical submission text and metadata** that we submit verbatim. The Notion mirror under Launch is the review surface — edit there, then sync changes back here before submitting.
+This document is the **canonical submission text and metadata** that we submit verbatim. The PitchIQ mirror under Launch is the review surface — edit here (repo is canonical), then sync changes to PitchIQ before submitting.
+
+## Status (2026-06-16)
+
+✅ **Official MCP Registry — PUBLISHED.** AgentAegis is live in the canonical, API-backed registry at `registry.modelcontextprotocol.io` as `io.github.astafford8488/agentaegis` v0.3.0 (published via `mcp-publisher` + the repo's `server.json`). This is the registry MCP clients query — **distinct from** the `modelcontextprotocol/servers` GitHub awesome-list below, which is still a separate PR.
+
+**Remaining directory submissions:** smithery.ai, mcp.so, glama.ai (copy below). Lead each with "already listed in the official MCP registry" as social proof. The `modelcontextprotocol/servers` GitHub PR is optional and lowest-priority now that the API registry carries us.
 
 ## Reality check — is AgentAegis directory-eligible?
 
@@ -27,7 +33,7 @@ This document is the **canonical submission text and metadata** that we submit v
 ```
 This PR adds AgentAegis to the third-party servers list under [section].
 
-AgentAegis is a hosted MCP server exposing 22 cybersecurity tools (vuln
+AgentAegis is a hosted MCP server exposing 20 cybersecurity tools (vuln
 scans, compliance checks, threat intel, code security, identity audits)
 with per-call billing — pre-funded API keys (Stripe-backed) or per-call
 USDC micropayments via the x402 protocol on Base mainnet.
@@ -36,10 +42,11 @@ The server is publicly reachable at:
   https://agentaegis-mcp-production.up.railway.app/mcp
 
 A free tier covers tools/list, help, and account_balance — agents can
-discover capabilities without payment. Paid tools start at $0.10/call.
+discover capabilities without payment. Paid tools are $1–$5/call.
 
 Production status:
-- Live with paying customers
+- Live on Base mainnet with real x402 settlements (verifiable on-chain)
+- Listed in the official MCP registry (io.github.astafford8488/agentaegis)
 - Status page: https://status.agentaegis.org
 - Public FAQ: https://agentaegis-mcp-production.up.railway.app/faq
 
@@ -55,7 +62,7 @@ guidance.
 ### README entry (copy/paste into README.md)
 
 ```markdown
-- **[AgentAegis](https://www.agentaegis.org)** — 22 cybersecurity tools (vuln scans, compliance, threat intel, code security, identity audits) with per-call billing via API keys or x402 USDC micropayments. Free tier for discovery; paid tools from $0.10/call. Hosted.
+- **[AgentAegis](https://www.agentaegis.org)** — 20 cybersecurity tools (vuln scans, compliance, threat intel, code security, identity audits) with per-call billing via API keys or x402 USDC micropayments. Free tier for discovery; paid tools $1–$5/call. Hosted.
 ```
 
 ### Pre-submission checklist
@@ -79,7 +86,7 @@ guidance.
 {
   "name": "agentaegis",
   "displayName": "AgentAegis",
-  "description": "22 cybersecurity tools for AI agents — vuln scans, compliance checks, threat intel, code security, identity audits. Per-call billing via API key or x402 USDC.",
+  "description": "20 cybersecurity tools for AI agents — vuln scans, compliance checks, threat intel, code security, identity audits. Per-call billing via API key or x402 USDC.",
   "icon": "https://www.agentaegis.org/icon.png",
   "homepage": "https://www.agentaegis.org",
   "repository": "https://github.com/astafford8488/agentaegis-mcp",
@@ -115,7 +122,7 @@ guidance.
 | Field | Value |
 |---|---|
 | Name | AgentAegis |
-| Description | 22 cybersecurity tools for AI agents — pay per call via API key or USDC. Free discovery tier. |
+| Description | 20 cybersecurity tools for AI agents — pay per call via API key or USDC. Free discovery tier. |
 | Category | Security · Operations · Compliance (multi-select) |
 | Author | Andrew Stafford |
 | Author URL | https://www.agentaegis.org |
@@ -141,7 +148,7 @@ guidance.
 | Field | Value |
 |---|---|
 | Name | AgentAegis |
-| Description | A hosted MCP server with 22 cybersecurity tools. Pay per call via Stripe API key or per-call USDC (x402). Free tier for tool discovery. Patent pending. |
+| Description | A hosted MCP server with 20 cybersecurity tools. Pay per call via Stripe API key or per-call USDC (x402). Free tier for tool discovery. Patent pending. |
 | Category | Security |
 | Author / Maintainer | Andrew Stafford |
 | Repository URL | https://github.com/astafford8488/agentaegis-mcp |
@@ -153,7 +160,7 @@ guidance.
 ### Description (longer, if mcp.so allows ~500 chars)
 
 ```
-AgentAegis exposes 22 cybersecurity tools to AI agents through a single MCP endpoint with per-call billing on two rails: pre-funded API keys (Stripe-backed) or per-call USDC micropayments via the x402 protocol on Base mainnet. Free discovery tier (tools/list, help, account_balance) means agents can explore capabilities without payment. Paid tools include vuln scans, compliance checks (SOC 2, ISO 27001, HIPAA, PCI DSS), threat intelligence (NVD, AbuseIPDB, OTX, abuse.ch), code security (SAST, secret scanning, dependency audit), and identity tooling (access review, MFA audit). Patent pending on the dual-rail architecture.
+AgentAegis exposes 20 cybersecurity tools to AI agents through a single MCP endpoint with per-call billing on two rails: pre-funded API keys (Stripe-backed) or per-call USDC micropayments via the x402 protocol on Base mainnet. Free discovery tier (tools/list, help, account_balance) means agents can explore capabilities without payment. Paid tools include vuln scans, compliance checks (SOC 2, ISO 27001, HIPAA, PCI DSS), threat intelligence (NVD, AbuseIPDB, OTX, abuse.ch), code security (SAST, secret scanning, dependency audit), and identity tooling (access review, MFA audit). Patent pending on the dual-rail architecture.
 ```
 
 ---
@@ -169,7 +176,7 @@ Mostly the same as mcp.so above. Glama-specific fields:
 
 | Field | Value |
 |---|---|
-| Pricing model | Pay-per-call ($0.10–$1.00 per tool, varies) |
+| Pricing model | Pay-per-call ($1–$5 per tool, varies by compute/data cost) |
 | Free tier | Yes (discovery tools — tools/list, help, account_balance) |
 | Authentication | Bearer token (API key) OR x402 (per-call USDC, no signup) |
 | Self-hostable | No (hosted SaaS) |

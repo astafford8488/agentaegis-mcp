@@ -40,7 +40,7 @@ https://www.agentaegis.org
 ```
 Hi HN,
 
-I built AgentAegis: an MCP server that lets agents pay per call to run 22
+I built AgentAegis: an MCP server that lets agents pay per call to run 20
 cybersecurity workflows. It wraps battle-tested open-source engines (nmap,
 Nuclei, Semgrep, sslyze, trufflehog, trivy) and threat-intel APIs (NVD,
 AbuseIPDB, AlienVault OTX, abuse.ch, HIBP) behind a unified per-call billing
@@ -65,13 +65,16 @@ committing to a paid call.
 
 Three protocol-level fixes I had to discover the hard way during reduction
 to practice:
-- The X-PAYMENT header is base64-encoded JSON; the facilitator's /verify
+- The payment header is base64-encoded JSON; the facilitator's /verify
   and /settle expect the DECODED object as paymentPayload (not the base64).
-- Payment requirements MUST include the EIP-712 domain {name:"USDC",
-  version:"2"} in the "extra" field — the facilitator returns
-  invalid_exact_evm_missing_eip712_domain otherwise.
+  (Header name also changed across x402 versions: v1 X-PAYMENT, v2
+  PAYMENT-SIGNATURE — accept both if you want one endpoint to serve both.)
+- The EIP-712 domain is network-specific and must equal the USDC contract's
+  on-chain name() EXACTLY: "USDC" on Base Sepolia but "USD Coin" on Base
+  mainnet. Get it wrong and verify fails with "execution reverted" because
+  the signature recovers to the wrong address — a maddening one to debug.
 - The "resource" field must be a fully-qualified URL, not a path. The
-  reference x402-fetch client zod-validates this before signing.
+  reference client zod-validates this before signing.
 
 Also worth mentioning — I ran AgentAegis on AgentAegis itself ("Phase 4
 self-audit"). It found 12 findings; 7 got fixed in code. The most
@@ -96,7 +99,8 @@ Stack:
 - Customer portal at app.agentaegis.org built on Next.js 15 + Vercel
   (separate repo, decoupled deploy lifecycle so a portal deploy can't
   crater the paid /mcp endpoint)
-- viem + x402-fetch for cryptographic settlement on Base mainnet
+- viem + @coinbase/x402 for cryptographic settlement on Base mainnet
+  (via Coinbase's CDP facilitator — see note below on why)
 
 Try it:
 - Marketing: https://www.agentaegis.org
@@ -123,9 +127,11 @@ What I'd love feedback on:
    "fail" only, treat "degraded" as informational. Does that match your
    ops mental model, or should monitor authors expect tri-state?
 
-3. Anyone tried building an x402 facilitator? The reference one at
-   x402.org has been reliable for me but I'd love to hear about
-   alternatives or self-hosted setups.
+3. Heads-up for anyone on x402: the public x402.org facilitator dropped
+   Base *mainnet* support, so mainnet settlement now routes through
+   Coinbase's CDP facilitator (JWT-auth'd via @coinbase/x402). I found
+   this out by migrating. Curious whether anyone is running a self-hosted
+   mainnet facilitator, and how that's held up.
 
 Happy to answer questions about MCP body inspection, the x402 reduction-
 to-practice gotchas, or the Supabase row-level security setup. Code is

@@ -39,13 +39,16 @@ the integration isn't. Three things that broke that aren't in either spec:
    "invalid_*" error that doesn't immediately suggest the encoding issue.
 
 2. Payment requirements have to include the EIP-712 typed-data domain
-   in the "extra" field. For USDC on Base / Ethereum, that's
-   {name: "USDC", version: "2"}. Without it, the facilitator returns
-   invalid_exact_evm_missing_eip712_domain — because it can't reconstruct
-   the domain separator to verify the signature. Different stablecoins
-   have different domains: USDT on Ethereum is {name: "Tether USD",
-   version: "1"}; DAI is {name: "Dai Stablecoin", version: "1"}. You
-   can't hardcode one and forget about it.
+   in the "extra" field, and the domain `name` has to match the token
+   contract's on-chain name() EXACTLY. The gotcha: USDC's name() is not
+   the same string everywhere — it's "USDC" on Base Sepolia but
+   "USD Coin" on Base mainnet (and Ethereum mainnet). The version is "2"
+   in both cases. Get the name wrong and the facilitator either returns
+   invalid_exact_evm_missing_eip712_domain or the signature verifies
+   against the wrong domain separator and settlement fails. Different
+   stablecoins differ too: USDT on Ethereum is {name: "Tether USD",
+   version: "1"}; DAI is {name: "Dai Stablecoin", version: "1"}. Read
+   name() from the contract per token/network — don't hardcode it.
 
 3. The "resource" field has to be a fully-qualified URL (scheme + host
    + path), not just a path. The reference x402-fetch client zod-validates

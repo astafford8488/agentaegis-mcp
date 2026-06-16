@@ -19,7 +19,7 @@ Per-call billing on a single MCP endpoint (API key + per-call USDC) — three th
 ## Body
 
 ```
-Built an MCP server that lets agents pay per call to run 22 cybersecurity
+Built an MCP server that lets agents pay per call to run 20 cybersecurity
 workflows. The actual scanning is done by battle-tested open-source engines
 (nmap, Nuclei, Semgrep, sslyze, trufflehog, trivy) and threat-intel APIs
 (NVD, AbuseIPDB, OTX). What I built is the integration + billing layer.
@@ -46,12 +46,16 @@ either spec:
    paymentPayload field. Sending the base64 string directly returns a
    confusing "invalid_*" error.
 
-2. Payment requirements have to include the EIP-712 domain
-   {name:"USDC", version:"2"} in the "extra" field. Without it, the
-   facilitator returns invalid_exact_evm_missing_eip712_domain — because
-   it can't reconstruct the typed-data domain to verify the signature.
-   Different stablecoins have different domains (USDT = "Tether USD",
-   DAI = "Dai Stablecoin"), so you can't hardcode one and call it done.
+2. Payment requirements have to include the EIP-712 domain in the "extra"
+   field, and the domain `name` MUST equal the token contract's on-chain
+   name() exactly. Without it, the facilitator returns
+   invalid_exact_evm_missing_eip712_domain; with the WRONG name, the
+   signature verifies against the wrong domain separator and settlement
+   fails. The trap: USDC's name() is "USDC" on Base Sepolia but "USD Coin"
+   on Base mainnet — so the value you tested on testnet is wrong in prod.
+   Other stablecoins differ too (USDT = "Tether USD", DAI = "Dai
+   Stablecoin"), so you can't hardcode one string and call it done — read
+   name() per token, per network.
 
 3. The "resource" field has to be a fully-qualified URL, not just a path.
    The reference x402-fetch client zod-validates this and rejects
@@ -64,7 +68,7 @@ URL-based approach charges a flat rate or breaks. I parse the JSON-RPC
 body non-destructively (preserving for downstream MCP handlers), look up
 params.name in a pricing map, then route.
 
-Architecture diagrams, patent provisional, and the actual 22 tools (cybersec
+Architecture diagrams, patent provisional, and the actual 20 tools (cybersec
 focused — CVE lookup, vuln scans, threat intel, compliance, code security,
 identity audits) are at agentaegis.org if anyone wants to look or use it.
 
@@ -84,6 +88,7 @@ pre-approve.
 
 Status page: status.agentaegis.org
 FAQ (mirrors the help tool): agentaegis-mcp-production.up.railway.app/faq
+Now listed in the official MCP registry (io.github.astafford8488/agentaegis).
 ```
 
 ## Anti-patterns to avoid in this sub

@@ -25,7 +25,7 @@ Here's what AgentAegis found when AgentAegis audited AgentAegis 🧵
 ### Tweet 2
 
 ```
-Setup: AgentAegis is an MCP server with 22 cybersecurity tools (CVE lookups, port scans, SSL audits, secret scanning, etc.) that agents pay per call to use.
+Setup: AgentAegis is an MCP server with 20 cybersecurity tools (CVE lookups, port scans, SSL audits, secret scanning, etc.) that agents pay per call to use.
 
 Two payment rails: Stripe-funded API keys, or per-call USDC via the x402 protocol on Base mainnet.
 ```
@@ -119,7 +119,7 @@ Fix: 4 DNS records, 2 minutes of work, prevents a whole class of certificate-mis
 ```
 12 findings total. 7 fixed in code. 5 are accepted risks documented in audit/REPORT.md.
 
-The whole audit took 4 hours, cost ~$2 in tool calls (we charge ourselves), and produced a SOC 2 / ISO 27001-mappable report you can hand to enterprise buyers.
+The whole audit took 4 hours, cost ~$30 in tool calls (yes, we charge ourselves), and produced a SOC 2 / ISO 27001-mappable report you can hand to enterprise buyers.
 ```
 
 ---
@@ -148,9 +148,9 @@ Try AgentAegis:
 → https://app.agentaegis.org (customer portal)
 → Show HN with technical details: [PERMALINK to your HN post]
 
-Free for the first $5 of tool calls. Pay-as-you-go from there. No subscription.
+Free discovery tier (browse tools + pricing, no signup). Pay-as-you-go from $1/call — API key or per-call USDC. No subscription.
 
-Patent pending on the dual-rail architecture.
+Now in the official MCP registry. Patent pending on the dual-rail architecture.
 ```
 
 **Note:** Replace `[PERMALINK to your HN post]` with the actual HN URL after submission.

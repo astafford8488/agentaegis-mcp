@@ -96,16 +96,16 @@ constraints you hit.
 TOOL_PRICING is a TypeScript const-frozen map at server startup. Looks like:
 
     {
-      "cve_lookup": 0.10,
-      "port_scan": 0.50,
-      "compliance_check": 1.00,
+      "cve_lookup": 1.00,
+      "port_scan": 2.00,
+      "compliance_check": 5.00,
       "help": 0,           // free
       "account_balance": 0,// free
       ...
     }
 
 Currency is USD. Conversion to USDC microcents (10^6) happens at
-challenge construction time. About 22 tools currently.
+challenge construction time. About 20 tools currently.
 
 Paying customer balance is a separate aegis_customers row; debit is a
 single atomic UPDATE with `WHERE balance_usd >= price` clause to prevent
