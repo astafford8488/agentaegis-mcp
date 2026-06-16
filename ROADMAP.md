@@ -164,16 +164,21 @@ Runs alongside / right after launch. Tasks tracked on the PIQ AA board.
 - **Submit to ChatGPT via Apps SDK** (PIQ, due 2026-06-28) — distribution surface.
 - **Circle USDC Developer Grant** (PIQ, due 2026-07-12) — circle.questbook.app.
 - **Base Builder Grants** (PIQ, due 2026-07-12) — retroactive 1–5 ETH + Builder Score.
-- **File NEW provisional patent** — endpoint-safety verdict gating a per-invocation
+- 🟡 **File NEW provisional patent** — endpoint-safety verdict gating a per-invocation
   agent payment (PIQ, due 2026-07-15). Captures the L2 trust-layer thesis before a
-  competitor does.
+  competitor does. **DRAFT COMPLETE** — spec + 18 informal claims (method/system/CRM)
+  at `~/Downloads/Businesses/AgentAegis/AgentAegis-Provisional-2-Spec.md`, filing-format
+  render at `~/Downloads/AgentAegis-Provisional-2-Spec-DRAFT.docx`, cross-references
+  US 64/057,021. Repeatable process captured as the `provisional-patent-drafting` skill.
+  Remaining: Andrew reviews → export PDF → file at Patent Center (PTO/SB/16 + SB/15A,
+  micro-entity ~$65).
 - **Brief patent attorney** on the security-verdict claim + de-risk the existing
   provisional (PIQ, due 2026-08-01).
 - **Landing-page positioning overhaul** — reframe hero from "22 tools" to the trust
   layer; add per-tool/use-case landing pages with demos (`/vet-endpoint` flagship,
   `/scan-mcp`, `/kya`, `/agent-reputation`). See the positioning wiki page for the IA.
 
-### Phase 9.0 — Agent identity + scan persistence (substrate for Phase 9)
+### Phase 9.0 — Agent identity + scan persistence (substrate for Phase 9) — 🟡 FOUNDATION SHIPPED (branch `phase-9.0-identity`)
 
 The current per-call atomic model breaks every multi-step workflow. Agents that
 pay via x402 have no persistent identity across calls — only a per-call tx hash.
@@ -182,21 +187,41 @@ compose findings across multiple tools, and the per-tool product ceiling is
 fundamentally low. Phase 9.0 ships the substrate that turns per-call into
 per-workflow.
 
-- `aegis_agents` table — first-class identity anchored on customer_id, wallet
-  address (cryptographically authenticated via x402 signatures), or anonymous
-  session for free-tier exploration
-- `aegis_scans` table — per-call output persistence with summary/full-output
-  tiering and customer-controlled retention (default 90 days)
+**Built so far (branch `phase-9.0-identity`, commit `8854270`, NOT deployed, migration NOT applied):**
+- ✅ `aegis_agents` table — first-class identity anchored on EXACTLY ONE of
+  customer_id, wallet address (cryptographically authenticated via x402
+  signatures), or anonymous session for free-tier exploration. Migration
+  `004_phase9_identity.sql`; forced RLS deny-all matching migration 003.
+- ✅ `aegis_scans` table — per-call output persistence with summary (always) +
+  full_output (opt-in) tiering and customer-controlled retention (default 90 days).
+  `usage_log.agent_id` link column added (nullable, no backfill).
+- ✅ Data-access layer: `src/db/agents.ts` (`resolveAgent` find-or-create,
+  `recordAgentSpend`, `getAgent`) + `src/db/scans.ts` (`createScan`/`completeScan`/
+  `failScan`, `listAgentScans`, `getScanForAgent` — **agent_id-scoped read, IDOR-safe
+  by construction**, applying the lesson from the `/v1/jobs` fix). Typechecks clean.
+
+**Remaining wiring (next increment — touches the live payment path, so gated on Andrew's go-ahead before deploy):**
 - Three new **free** tools: `agent_whoami`, `agent_history`, `agent_scan_get`
-- `previous_scan_id` parameter added to existing tools — chained workflows
+  (template = `src/tools/account/accountBalance.ts`; register in `server.ts`,
+  price 0 in `types/mcp.ts`).
+- Identity resolution at the request-context boundary: where `httpServer.ts`
+  attaches `ctx.apiKey` (and at the x402 settle path, where the payer wallet is
+  known), also `resolveAgent(...)` and attach `ctx.agent`. **(money-path file)**
+- Scan persistence hook around tool dispatch — `createScan`→run→`completeScan`
+  for paid tools, threading `agent_id` into `aegis_usage_log`. **(money-path-adjacent)**
+- `previous_scan_id` parameter added to existing tools — chained workflows.
 - Composite tools become possible: `vuln_prioritize(scan_ids[])`,
   `audit_report_generate(scan_ids[])`, etc.
+- Apply migration `004` to prod Supabase + deploy (Railway watches `master`, so
+  merging the branch is the deploy trigger). **(prod schema change + money-path deploy)**
+- Tests (extend the vitest suite; keep 50/50 green).
 - Privacy: customer-controlled deletion + export pages (GDPR Art. 15/17 satisfied
-  by the schema, not bolted on), default 90-day retention, encrypted full_output
+  by the schema, not bolted on), default 90-day retention, encrypted full_output.
 
 **Patent angle:** persistent agent identity derived from cryptographic payment
 signatures may be a fourth inventive aspect worth filing in the nonprovisional
-(US 64/057,021 — hard cutoff 2027-05-04).
+(US 64/057,021 — hard cutoff 2027-05-04). The 2nd provisional (endpoint-safety
+verdict gating a payment) is drafted — see below.
 
 Full design + schema + flow: `wiki/pages/agentaegis-agent-identity.md`
 
