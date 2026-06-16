@@ -36,6 +36,7 @@ import { facilitator } from "@coinbase/x402";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import { encodePaymentRequiredHeader } from "@x402/core/http";
 import { TOOL_PRICING } from "../types/mcp.js";
+import { buildBazaarExtension, toolDiscoveryDescription } from "./bazaarCatalog.js";
 
 /** Map v1 short-name networks → v2 chain-id format. */
 const V1_TO_V2_NETWORK: Record<string, `${string}:${string}`> = {
@@ -133,20 +134,34 @@ export interface CdpChallenge {
   error: string;
   resource: { url: string; description?: string; mimeType?: string };
   accepts: CdpPaymentRequirements[];
+  /** Bazaar discovery metadata ({ bazaar: <extension> }). The v2 client copies
+   *  this into paymentPayload.extensions, which the CDP facilitator reads on
+   *  settle to index the tool in the Bazaar discovery layer. */
+  extensions?: Record<string, unknown>;
 }
 
 /** Build the full 402 challenge body for a tool call. */
 export function buildCdpChallenge(toolName: string, resourceUrl: string): CdpChallenge {
-  return {
+  const discoveryDesc = toolDiscoveryDescription(toolName);
+  const challenge: CdpChallenge = {
     x402Version: 2,
     error: "X-PAYMENT header is required",
     resource: {
       url: resourceUrl,
-      description: `AgentAegis ${toolName} — single tool invocation`,
+      // Use the agent-facing tool description for the Bazaar catalog entry.
+      description: discoveryDesc
+        ? `AgentAegis — ${discoveryDesc}`
+        : `AgentAegis ${toolName} — single tool invocation`,
       mimeType: "application/json",
     },
     accepts: [buildCdpPaymentRequirements(toolName)],
   };
+
+  // Attach Bazaar discovery metadata (best-effort — never breaks the challenge).
+  const bazaar = buildBazaarExtension(toolName);
+  if (bazaar) challenge.extensions = bazaar;
+
+  return challenge;
 }
 
 /**
