@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.astafford8488/agentaegis",
   "title": "AgentAegis",
-  "description": "Pay-per-call cybersecurity for AI agents — 22 tools (vuln scans, CVE lookups, threat intel, compliance, code security) over MCP, billed per call via API key or x402 USDC on Base. Free discovery tier.",
+  "description": "Pay-per-call cybersecurity for AI agents: vuln scans, threat intel, compliance, code security.",
   "repository": {
     "url": "https://github.com/astafford8488/agentaegis-mcp",
     "source": "github"
