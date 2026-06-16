@@ -43,6 +43,29 @@ export function buildAdminRouter(): Router {
     res.sendFile(path.join(__dirname, "..", "..", "public", "admin", "index.html"));
   });
 
+  // Bazaar listing check — queries the CDP Bazaar discovery index for our
+  // resources (by payTo) + a keyword search. Uses the server's CDP creds
+  // (CDP_API_KEY_ID/SECRET), which the local machine doesn't have, so this is
+  // the only place we can verify the listing. Admin-token gated.
+  router.get("/bazaar-check", checkAdminAuth, async (_req: Request, res: Response) => {
+    try {
+      const { facilitator } = await import("@coinbase/x402");
+      const { HTTPFacilitatorClient } = await import("@x402/core/server");
+      const { withBazaar } = await import("@x402/extensions/bazaar");
+      const client = withBazaar(new HTTPFacilitatorClient(facilitator)) as unknown as {
+        extensions: { bazaar: { listResources: (p: Record<string, unknown>) => Promise<unknown>; search: (p: Record<string, unknown>) => Promise<unknown> } };
+      };
+      const payTo = process.env.X402_PAYEE_ADDRESS || "";
+      const [byPayTo, bySearch] = await Promise.all([
+        client.extensions.bazaar.listResources({ payTo, limit: 50 }).catch((e: unknown) => ({ error: String(e) })),
+        client.extensions.bazaar.search({ query: "AgentAegis cybersecurity scan", limit: 20 }).catch((e: unknown) => ({ error: String(e) })),
+      ]);
+      res.json({ payTo, network: process.env.X402_NETWORK, cdp_mode: Boolean(process.env.CDP_API_KEY_ID && process.env.CDP_API_KEY_SECRET), listed_by_payTo: byPayTo, search_results: bySearch });
+    } catch (e: unknown) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
+
   // === Stats endpoints ===
 
   // Overview: customer count, total spend, total calls
