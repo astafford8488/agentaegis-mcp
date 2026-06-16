@@ -178,7 +178,7 @@ Runs alongside / right after launch. Tasks tracked on the PIQ AA board.
   layer; add per-tool/use-case landing pages with demos (`/vet-endpoint` flagship,
   `/scan-mcp`, `/kya`, `/agent-reputation`). See the positioning wiki page for the IA.
 
-### Phase 9.0 — Agent identity + scan persistence (substrate for Phase 9) — 🟡 FOUNDATION SHIPPED (branch `phase-9.0-identity`)
+### Phase 9.0 — Agent identity + scan persistence (substrate for Phase 9) — 🟡 BUILT ON BRANCH `phase-9.0-identity` (not deployed)
 
 The current per-call atomic model breaks every multi-step workflow. Agents that
 pay via x402 have no persistent identity across calls — only a per-call tx hash.
@@ -187,36 +187,39 @@ compose findings across multiple tools, and the per-tool product ceiling is
 fundamentally low. Phase 9.0 ships the substrate that turns per-call into
 per-workflow.
 
-**Built so far (branch `phase-9.0-identity`, commit `8854270`, NOT deployed, migration NOT applied):**
-- ✅ `aegis_agents` table — first-class identity anchored on EXACTLY ONE of
-  customer_id, wallet address (cryptographically authenticated via x402
-  signatures), or anonymous session for free-tier exploration. Migration
-  `004_phase9_identity.sql`; forced RLS deny-all matching migration 003.
-- ✅ `aegis_scans` table — per-call output persistence with summary (always) +
-  full_output (opt-in) tiering and customer-controlled retention (default 90 days).
-  `usage_log.agent_id` link column added (nullable, no backfill).
-- ✅ Data-access layer: `src/db/agents.ts` (`resolveAgent` find-or-create,
-  `recordAgentSpend`, `getAgent`) + `src/db/scans.ts` (`createScan`/`completeScan`/
-  `failScan`, `listAgentScans`, `getScanForAgent` — **agent_id-scoped read, IDOR-safe
-  by construction**, applying the lesson from the `/v1/jobs` fix). Typechecks clean.
+**Built (branch `phase-9.0-identity`, commits `8854270`+`0f64e86`; 58/58 tests pass, tsc clean; migration `004` NOT applied, NOT deployed):**
+- ✅ `aegis_agents` table — identity anchored on EXACTLY ONE of customer_id,
+  wallet address (cryptographically authenticated via x402 signatures), or
+  anonymous session. `aegis_scans` table — summary (always) + full_output
+  (opt-in) + 90-day retention + `previous_scan_id` self-ref lineage column.
+  `usage_log.agent_id` link. Forced RLS deny-all matching migration 003.
+- ✅ Data-access layer: `src/db/agents.ts` + `src/db/scans.ts` (`getScanForAgent`
+  is **agent_id-scoped → IDOR-safe by construction**, applying the `/v1/jobs` lesson).
+- ✅ Identity resolution (`src/auth/agentIdentity.ts`): lazy, memoized
+  `getOrResolveAgent` (precedence customer_id > x402 payer wallet > per-day anon
+  session). Pure `anonSessionKey` + `identityFor` unit-tested. Wired into the
+  `/mcp` x402 gate (resolves payer wallet, stamps `usage_log.agent_id`) and the
+  request context.
+- ✅ Scan persistence in `wrapTool`: every paid call opens→completes/fails a scan
+  linked to the agent, bumps agent aggregates, threads `agent_id` into usage logs.
+  Legacy/stdio + budget-exceeded behavior unchanged.
+- ✅ `previous_scan_id` injected into every paid tool's schema (`registerPaidTool`),
+  recorded as IDOR-safe lineage (validated against the caller's own scans).
+- ✅ Three free tools: `agent_whoami`, `agent_history`, `agent_scan_get` (priced 0).
 
-**Remaining wiring (next increment — touches the live payment path, so gated on Andrew's go-ahead before deploy):**
-- Three new **free** tools: `agent_whoami`, `agent_history`, `agent_scan_get`
-  (template = `src/tools/account/accountBalance.ts`; register in `server.ts`,
-  price 0 in `types/mcp.ts`).
-- Identity resolution at the request-context boundary: where `httpServer.ts`
-  attaches `ctx.apiKey` (and at the x402 settle path, where the payer wallet is
-  known), also `resolveAgent(...)` and attach `ctx.agent`. **(money-path file)**
-- Scan persistence hook around tool dispatch — `createScan`→run→`completeScan`
-  for paid tools, threading `agent_id` into `aegis_usage_log`. **(money-path-adjacent)**
-- `previous_scan_id` parameter added to existing tools — chained workflows.
-- Composite tools become possible: `vuln_prioritize(scan_ids[])`,
-  `audit_report_generate(scan_ids[])`, etc.
-- Apply migration `004` to prod Supabase + deploy (Railway watches `master`, so
-  merging the branch is the deploy trigger). **(prod schema change + money-path deploy)**
-- Tests (extend the vitest suite; keep 50/50 green).
+**Remaining (the gated steps + future depth):**
+- 🔒 Apply migration `004` to prod Supabase + deploy (Railway watches `master`, so
+  merging the branch is the deploy trigger). **GATE: money-path deploy → confirm with Andrew.**
+- Per-tool *consumption* of `previous_scan_id` (auto-ingest a parent scan's
+  output) → true composite tools: `vuln_prioritize(scan_ids[])`,
+  `audit_report_generate(scan_ids[])`, etc. (lineage + retrieval already ship;
+  this is the analysis step).
+- Optional DX: return the new `_scan_id` in paid-tool responses (currently
+  discoverable via `agent_history`) — held back to keep tool outputs unchanged.
+- Perf: `getOrResolveAgent` + scan writes add DB round-trips per paid call; fold
+  into a SECURITY DEFINER RPC if latency matters at volume.
 - Privacy: customer-controlled deletion + export pages (GDPR Art. 15/17 satisfied
-  by the schema, not bolted on), default 90-day retention, encrypted full_output.
+  by the schema), default 90-day retention, encrypted full_output.
 
 **Patent angle:** persistent agent identity derived from cryptographic payment
 signatures may be a fourth inventive aspect worth filing in the nonprovisional
