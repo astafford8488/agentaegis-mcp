@@ -33,6 +33,9 @@ import { mfaAudit, mfaAuditSchema } from "./tools/identity/mfaAudit.js";
 // Offensive tools
 import { credentialCheck, credentialCheckSchema } from "./tools/offensive/credentialCheck.js";
 
+// Trust Layer (L2) — composite agent-facing verdicts
+import { vetEndpoint, vetEndpointSchema } from "./tools/trustLayer/vetEndpoint.js";
+
 // Account tools (free for the agent — needed to manage budget)
 import { accountBalance, accountBalanceSchema } from "./tools/account/accountBalance.js";
 import { help, helpSchema } from "./tools/account/help.js";
@@ -235,6 +238,11 @@ export function buildMcpServer(options: ServerOptions = {}): McpServer {
 
   // Offensive
   registerPaidTool(server, "credential_check", "Check email/domain in breach databases (HIBP).", credentialCheckSchema.shape, credentialCheck, options);
+
+  // Trust Layer (L2) — the flagship. Composite PROCEED/CAUTION/BLOCK verdict for
+  // an endpoint an agent is about to call or pay: TLS + DNS hygiene + threat
+  // intel + domain age → one decision. Designed to gate a per-invocation payment.
+  registerPaidTool(server, "vet_endpoint", "Composite trust verdict (PROCEED/CAUTION/BLOCK) for an endpoint an agent is about to call or pay — combines TLS/cert health, DNS hygiene, threat-intel reputation, and domain age into one decision with reasons.", vetEndpointSchema.shape, vetEndpoint, options);
 
   // Account — free tool so agents can self-check budget before paid calls.
   // Bypasses payment gating entirely (skipPayment for this one regardless of options).

@@ -34,6 +34,7 @@ export const TOOL_PRICING: Record<string, number> = {
   // $3 — deeper active scans
   incident_triage: 3.00,
   vuln_scan_network: 3.00,
+  vet_endpoint: 3.00, // L2 trust layer — composite verdict from multiple sub-checks
 
   // $5 — heaviest scans / full report synthesis
   vuln_scan_web_app: 5.00,
