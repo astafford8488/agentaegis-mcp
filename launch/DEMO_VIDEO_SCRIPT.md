@@ -1,176 +1,76 @@
 # Demo video script — AgentAegis (3 min)
 
-**Format:** Screen recording with voiceover. No talking head needed.
-**Recording tool:** OBS Studio (free) or Loom (faster). Loom for the first cut, OBS if you want production-quality after.
-**Output:** 1080p MP4, ~80–120 MB. Upload to YouTube (unlisted), embed on agentaegis.org and link from Show HN.
-**Total runtime:** 2:55 ± 10s. Anything over 3 min loses 50% of viewers; under 2:30 feels rushed.
+**Format:** screen recording + a separately-recorded voiceover (no talking head).
+**Why this layout:** the voiceover is ONE continuous take (Section 1) so you record it start-to-finish in a single sitting and it flows naturally. The visuals (Section 2) and on-screen text (Section 3) are captured/added separately and synced to the VO timecodes in the edit.
+**Tools:** OBS Studio or Loom (screen capture) · a decent mic for the VO · CapCut or DaVinci Resolve (edit).
+**Output:** 1080p MP4, target 2:55 (±10s). Over 3:00 loses ~half the viewers; under 2:30 feels rushed. Upload Unlisted to YouTube; embed on agentaegis.org; link from Show HN + the X thread.
 
 ---
 
-## Cold open (0:00 – 0:15)
+## 1. Voiceover — record in ONE continuous take
 
-**Visual:** Split screen — left side, Claude Desktop conversation; right side, the AgentAegis MCP server logs streaming in real time.
+Read straight through, top to bottom, against the mic. The `[0:00]` markers are timing guides for the edit, **not** stops — only pause where you see **(beat)**. Flub a line? Re-read that sentence and keep rolling; trim the dead take in post. Record this AFTER the visuals (Section 4 explains why).
 
-**Voiceover:**
-> "An AI agent just paid a dollar in stablecoin to scan a CVE on a public blockchain. No signup. No subscription. No support ticket. The whole transaction took three seconds."
+> `[0:00]` An AI agent just paid a dollar in stablecoin to scan a CVE on a public blockchain. No signup. No subscription. No support ticket. The whole transaction took three seconds. **(beat)**
+>
+> `[0:15]` AgentAegis is an MCP server — Model Context Protocol, the standard agents use to call tools — that lets your AI agent run twenty cybersecurity workflows: vulnerability scans, compliance checks, threat intel, code security, identity audits. The actual scanning is done by the open-source tools you already trust — nmap, Nuclei, Semgrep, sslyze, trufflehog, trivy. What we built is the integration layer that makes them callable from any MCP-compatible agent, plus the unified per-call billing. **(beat)** Two ways agents pay: a pre-funded API key with a monthly limit, the way most APIs work — or per call, in USDC, signed cryptographically and settled on-chain in three seconds, no account required. Both rails land on the same endpoint; the agent's MCP client doesn't change. Free tools work without payment, so agents can discover what's available before they spend anything. **(beat)**
+>
+> `[0:45]` Here's a paid call with an API key — same flow as any modern SaaS API. The agent calls cve_lookup for CVE-2024-3094, the XZ backdoor. The server checks the API key, confirms the balance covers the one-dollar price, does an atomic update on the customer record so two simultaneous calls can't over-draw, then runs the lookup against NVD. Nine seconds later the agent has CVSS, affected packages, references. The customer portal shows the charge — paid via API key, one dollar, balance now four dollars. **(beat)**
+>
+> `[1:30]` Now the autonomous version — no API key, no signup, no human in the loop. The agent posts to slash-m-c-p. The server returns four-oh-two: payment required. The agent signs an ERC-3009 transfer-with-authorization for one dollar of USDC — gasless, the agent doesn't even hold ETH. The server forwards the signed authorization to a facilitator, on-chain settlement completes, and the agent gets the tool result. Three seconds end-to-end on Base mainnet. Same usage log, same audit trail — the portal shows it side by side with the API-key call: same schema, different payment rail, an on-chain transaction hash you can verify on BaseScan right now. **(beat)**
+>
+> `[2:15]` Sign-up takes about two minutes. Top up at agentaegis dot org slash pay — five-dollar minimum, Stripe handles the card — and an email arrives with your first API key. The customer portal is at app dot agentaegis dot org: Google sign-in or a magic link, issue more keys, view usage, configure webhooks, export to CSV. Standard SaaS — except the underlying primitive is per-call billing instead of subscriptions. **(beat)**
+>
+> `[2:45]` agentaegis dot org. Twenty tools. Pay per call. No subscriptions. No human in the loop required. Patent pending on the architecture, built solo. Try it on your agent today.
 
-**On-screen text overlay:**
-```
-AgentAegis
-20 cybersecurity tools for AI agents
-Pay per call — card or USDC
-```
+**Length check:** ~2:55 at a calm pace. If you run long, the `[0:15]` product paragraph is the safest to trim.
 
 ---
 
-## What it is (0:15 – 0:45)
+## 2. Visual track — capture separately, sync to the VO timecodes
 
-**Visual:** agentaegis.org marketing page hero, then quick cuts through:
-- Pricing table (`/pricing`)
-- Tool list (the 20 tools grouped by category)
-- The /faq snippet showing pricing examples
+Record each as its own silent clip; drop it under the matching VO timecode in the edit.
 
-**Voiceover:**
-> "AgentAegis is an MCP server — Model Context Protocol, the standard agents use to call tools — that lets your AI agent run twenty cybersecurity workflows. Vulnerability scans, compliance checks, threat intel, code security, identity audits, the works. The actual scanning is done by the open-source tools you already trust — nmap, Nuclei, Semgrep, sslyze, trufflehog, trivy. What we built is the integration layer that makes them callable from any MCP-compatible agent, plus the unified per-call billing.
->
-> Two ways agents pay. A pre-funded API key with a monthly limit, the way most APIs work. Or per call, in USDC, signed cryptographically and settled on chain in three seconds — no account required.
->
-> Both rails land on the same endpoint. The agent's MCP client doesn't change. Free tools work without payment so agents can discover what's available before they spend anything."
-
-**On-screen text overlay:**
-```
-1 endpoint · 2 payment rails · 20 tools · 0 subscriptions
-```
+- **`[0:00–0:15]` Cold open** — split screen: left, the Claude Desktop conversation; right, the AgentAegis MCP server logs streaming live.
+- **`[0:15–0:45]` What it is** — agentaegis.org hero, then quick cuts: the `/pricing` table, the 20-tool list grouped by category, the `/faq` pricing snippet.
+- **`[0:45–1:30]` Demo 1 — API key** — Claude Desktop pointed at the production `/mcp` with the demo key. In order: (1) the config showing the server URL + `Authorization: Bearer aegis_…`; (2) prompt "Look up CVE-2024-3094"; (3) the `cve_lookup` call appearing in the right-side logs; (4) the response (CVSS, packages, refs); (5) portal balance dropping $5.00 → $4.00; (6) `/account/usage` row showing `paid_via: api_key_balance`.
+- **`[1:30–2:15]` Demo 2 — x402** — terminal running the x402 client. In order: (1) the script (POSTs to `/mcp`, no auth header); (2) run it → HTTP 402 with payment requirements (highlight `payTo`, `amount`); (3) the ERC-3009 signing log line; (4) the retry carrying the payment header; (5) BaseScan showing the on-chain $1 USDC transfer to `0x3347…F7fC`; (6) the tool result in stdout; (7) `/account/usage` row with `paid_via: x402` and the tx-hash `payment_ref`.
+- **`[2:15–2:45]` Sign-up** — incognito browser, fast cuts: agentaegis.org → "Get Started" → `/pay` (Stripe Checkout, $5 min) → success page → API-key email → app.agentaegis.org Google login → `/account` (balance + 0 calls) → optional `/account/keys` one-time key reveal.
+- **`[2:45–3:00]` Outro** — hold on the agentaegis.org homepage with the URL bar visible.
 
 ---
 
-## Demo 1 — API-key billing (0:45 – 1:30)
+## 3. On-screen text & overlays — add in the edit at these cues
 
-**Visual:** Claude Desktop. Pre-configured to point at `https://agentaegis-mcp-production.up.railway.app/mcp` with the demo API key. Real conversation, real call.
-
-**Recording steps (record in this exact order):**
-1. Show the Claude Desktop config briefly — the MCP server URL and the `Authorization: Bearer aegis_...` header
-2. Send the prompt: "Look up CVE-2024-3094"
-3. Claude calls `cve_lookup` tool — show the call appear in MCP logs (right side)
-4. Show the response — CVSS score, affected packages, references
-5. Cut to the customer portal: balance dropped from $5.00 to $4.00
-6. Cut to /account/usage — the call shows up in the table with `paid_via: api_key_balance`
-
-**Voiceover (timed to the visuals above):**
-> "Here's a paid call with an API key. Same flow as any modern SaaS API.
->
-> The agent calls `cve_lookup` for CVE-2024-3094 — that's the XZ backdoor. Server checks the API key, confirms balance covers the one-dollar price, atomic UPDATE on the customer record so two simultaneous calls can't over-draw, then runs the lookup against NVD.
->
-> Nine seconds later, the agent has CVSS, affected packages, references. Customer portal shows the charge — paid via API key, one dollar, balance now four dollars."
-
-**On-screen text overlay** (lower-third, briefly):
-```
-$1 · paid via API key · 9 sec end-to-end
-```
+- **`[0:05]` title card:** `AgentAegis` · `20 cybersecurity tools for AI agents` · `Pay per call — card or USDC`
+- **`[0:40]` lower-third:** `1 endpoint · 2 payment rails · 20 tools · 0 subscriptions`
+- **`[1:20]` lower-third:** `$1 · paid via API key · ~9 sec end-to-end`
+- **`[2:05]` lower-third:** `$1 · paid via x402 · ~3 sec settlement · txHash on BaseScan`
+- **`[2:35]` lower-third:** `2 min · Stripe · $5 minimum · agentaegis.org/pay`
+- **`[2:50–3:00]` full-screen hold (4s):** `agentaegis.org` · `github.com/astafford8488` · `[your X handle]`
 
 ---
 
-## Demo 2 — x402 cryptocurrency rail (1:30 – 2:15)
+## 4. Recording order & production checklist
 
-**Visual:** Terminal running an x402-fetch client script. Real Base mainnet wallet. Real settlement.
+**Capture in this order:**
+1. **Screen / B-roll first** (Section 2), silent. Get a clean take of each clip — don't narrate live.
+2. **Voiceover second** (Section 1), one continuous take. Reading to the finished visuals is far easier than making visuals match a fixed VO.
+3. **Edit:** lay the VO on the timeline → drop each visual clip under its matching timecode → add the overlays (Section 3) → burn in captions.
 
-**Recording steps:**
-1. Show the script — it's a single Node script that POSTs to /mcp without any Authorization header
-2. Run it. First response: HTTP 402 with payment requirements (show the JSON, highlight `payTo`, `amount`, `extra.name=USDC`)
-3. Script signs the ERC-3009 authorization with viem (show the signing log line briefly)
-4. Script retries with the X-PAYMENT header
-5. Server forwards to facilitator, settles on chain
-6. Cut to BaseScan: the actual transaction. $1 USDC moved from payer wallet to receiver `0x3347...DF7fC`
-7. Back to terminal: the tool result is in stdout
-8. Cut to /account/usage in the portal — the call shows up with `paid_via: x402` and `payment_ref` is the transaction hash
+**Before recording:**
+- Browser: clear bookmarks bar, hide profile pictures, neutral wallpaper.
+- Terminal: clean theme (Solarized or similar), font 16pt+, light background for daytime viewing.
+- OBS/Loom: 1080p, 30 fps, audio ≥128 kbps.
+- Clear all pre-existing rate-limit / Sentry / cookie banners by hitting the sites in incognito first.
+- Stripe in **TEST mode** for the sign-up demo — a real card on screen is a HARD STOP.
+- x402 demo wallet funded with ≥$5 USDC on Base mainnet (the demo spends ~$1).
+- Demo API key for Demo 1 has ≥$1.00 prepaid balance.
+- Kill Slack/Discord/email/all notifications for the session.
 
-**Voiceover:**
-> "Now the autonomous version. No API key, no signup, no human in the loop.
->
-> The agent posts to /mcp. Server returns four-oh-two — payment required. The agent signs an ERC-3009 transferWithAuthorization for one dollar of USDC. Gasless — the agent doesn't hold ETH.
->
-> Server forwards the signed authorization to a facilitator, on-chain settlement completes, agent gets the tool result. Three seconds end-to-end on Base mainnet.
->
-> Same usage log, same audit trail. The portal shows it side by side with the API-key call from before — same schema, different payment rail, on-chain transaction hash you can verify on BaseScan right now."
-
-**On-screen text overlay** (lower-third):
-```
-$1 · paid via x402 · 3 sec settlement · txHash on BaseScan
-```
-
----
-
-## Sign-up flow (2:15 – 2:45)
-
-**Visual:** Incognito browser. Fast cuts.
-
-**Recording steps:**
-1. Open `agentaegis.org`, click "Get Started"
-2. Land on `/pay` (Stripe Checkout). Show the $5 minimum top-up
-3. Pay with a test card (Stripe test mode for the recording — note this in post)
-4. Get the success page → AgentAegis email arrives with the API key
-5. Click `app.agentaegis.org` link → log in with Google
-6. Land on /account showing balance + 0 calls
-7. Optionally: hit `/account/keys`, click "Issue new key", show the one-time plaintext reveal
-
-**Voiceover:**
-> "Sign-up takes about two minutes. Top up at agentaegis.org slash pay — five-dollar minimum, Stripe handles the card. Email arrives with your first API key.
->
-> Customer portal at app.agentaegis.org. Google sign-in or magic link. Issue more keys, view usage, configure webhooks, export to CSV. Standard SaaS, except the underlying primitive is per-call billing instead of subscriptions."
-
-**On-screen text overlay:**
-```
-2 min · Stripe · $5 minimum · agentaegis.org/pay
-```
-
----
-
-## Outro (2:45 – 3:00)
-
-**Visual:** Hold on the agentaegis.org homepage. URL bar visible.
-
-**Voiceover:**
-> "agentaegis dot org. Twenty tools. Pay per call. No subscriptions. No human in the loop required.
->
-> Patent pending on the architecture. Built solo. Try it on your agent today."
-
-**On-screen text overlay (full screen, hold for 4 seconds at the end):**
-```
-agentaegis.org
-github.com/astafford8488
-
-@andrewstafford or whoever — ←  fill in your handle
-```
-
----
-
-## Production checklist
-
-Before recording:
-
-- [ ] Browser windows: clear all bookmarks bars, hide profile pictures, neutral wallpaper
-- [ ] Terminal: Solarized or similar clean theme, font 16pt+, white-or-light background for daytime viewing
-- [ ] OBS or Loom: record at 1080p, 30 fps, audio bitrate ≥128 kbps
-- [ ] Clear ALL pre-existing rate-limit / Sentry / X-Cookie banners on the recorded sites by hitting them in incognito first
-- [ ] Stripe is in test mode for the sign-up demo — REAL credit cards on screen are a HARD STOP
-- [ ] Wallet for x402 demo has at least $5 of USDC on Base mainnet (the demo uses ~$1)
-- [ ] Demo API key for Demo 1 has at least $1.00 prepaid balance
-- [ ] Disable Slack, Discord, email, every notification source for the recording session
-
-While recording:
-
-- [ ] Don't speak for 2 seconds at the start of each cut — gives editor breathing room
-- [ ] Don't apologize for typos or fumbles — re-record the cut, keep the take energy up
-- [ ] Cursor moves: deliberate, smooth, never frantic
-- [ ] If a real-time transaction takes longer than expected (e.g., 8 sec instead of 3), cut to a B-roll explaining the architecture, then cut back
-- [ ] Record the voiceover separately AFTER the screen capture, not live. Way easier to fix mistakes that way
-
-After recording:
-
-- [ ] Edit in CapCut (free) or DaVinci Resolve (free, more powerful)
-- [ ] Add captions — at least 50% of YouTube viewers watch muted on first impression
-- [ ] Compress to <100 MB for embedding (1080p, h.264, ~3000 kbps)
-- [ ] Upload to YouTube as **Unlisted** first. Get 3-5 trusted people to review before going Public
-- [ ] Embed on agentaegis.org hero (above the fold)
-- [ ] Link from Show HN body and Twitter thread tweet 11
-- [ ] Add to /faq under "Can I see a demo?" entry
+**After recording:**
+- Edit in CapCut (free) or DaVinci Resolve (free, more powerful).
+- Add burned-in captions — 50%+ of YouTube viewers start muted.
+- Compress to <100 MB (1080p, h.264, ~3000 kbps).
+- Upload to YouTube **Unlisted**; get 3–5 trusted reviewers before going Public.
+- Embed on the agentaegis.org hero (above the fold); link from the Show HN body and X thread (tweet 11); add to `/faq` under "Can I see a demo?".
