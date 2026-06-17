@@ -180,7 +180,7 @@ Runs alongside / right after launch. Tasks tracked on the PIQ AA board.
   layer; add per-tool/use-case landing pages with demos (`/vet-endpoint` flagship,
   `/scan-mcp`, `/kya`, `/agent-reputation`). See the positioning wiki page for the IA.
 
-### Phase 9.0 — Agent identity + scan persistence (substrate for Phase 9) — 🟡 BUILT ON BRANCH `phase-9.0-identity` (not deployed)
+### Phase 9.0 — Agent identity + scan persistence (substrate for Phase 9) — ✅ SHIPPED LIVE 2026-06-17 (migration 004 applied to Agentbind `thtnfctijtpdoplyftaw`; merged to master; `/health/deep` green, tools_count 22→26)
 
 The current per-call atomic model breaks every multi-step workflow. Agents that
 pay via x402 have no persistent identity across calls — only a per-call tx hash.
@@ -235,10 +235,12 @@ Full design + schema + flow: `wiki/pages/agentaegis-agent-identity.md`
 **The L2 trust layer is the product moat.** These compose the existing L1 tools into
 agent-facing verdicts. Prioritized from the PIQ AA board:
 
-- **`vet_endpoint`** (PIQ, due 2026-08-15) — composite trust verdict for an endpoint an
-  agent is about to pay/call: SSL + domain age + threat intel + breach exposure +
-  on-chain reputation → single PROCEED / CAUTION / BLOCK verdict. **Flagship.** Gates a
-  payment → core of the new patent.
+- ✅ **`vet_endpoint` — SHIPPED LIVE 2026-06-17.** Composite trust verdict for an endpoint
+  an agent is about to pay/call: TLS/cert + DNS hygiene + threat intel (domain & resolved
+  IP) + RDAP domain age → single PROCEED / CAUTION / BLOCK verdict + trust_score + reasons.
+  **Flagship.** Gates a payment → core of the 2nd patent. `src/tools/trustLayer/vetEndpoint.ts`,
+  pure unit-tested scorer, $3. NEXT: add on-chain agent/wallet reputation as a 5th sub-score
+  (ERC-8004 + GoPlus — PIQ task `ab894469`); breach-exposure sub-score once HIBP key is set.
 - **`scan_mcp_plugin` / `scan_skill`** (PIQ, due 2026-07-31) — supply-chain scanner for
   agent tools: before an agent installs/trusts an MCP server or skill, scan it for
   malicious patterns, exfiltration, prompt-injection sinks.
