@@ -101,8 +101,11 @@ export function scoreEndpoint(s: EndpointSignals): { trust_score: number; verdic
       reasons.push(`TLS certificate expires in ${s.tls.certDays} days.`);
     }
   } else {
-    score -= 25;
-    reasons.push("No valid HTTPS/TLS endpoint reachable — agents should not transact over plaintext.");
+    // The scan failed or timed out — we can't tell "plaintext / no HTTPS" apart
+    // from "host blocked the scanner," so flag it as unverified (caution-weight)
+    // rather than over-claiming plaintext.
+    score -= 15;
+    reasons.push("TLS/certificate posture could not be verified (scan failed or timed out) — confirm the endpoint's HTTPS manually before transacting.");
   }
 
   // Domain registration age — new domains are a strong fraud/phishing signal.
@@ -179,6 +182,17 @@ async function getDomainAgeDays(hostname: string): Promise<number | null> {
   }
 }
 
+/** Resolve to null if the promise doesn't settle within ms. Bounds each signal
+ *  so a hung sub-scan (e.g. sslyze on a host that blocks scanners — observed
+ *  taking the full 120s) can't stall the verdict. A timed-out/failed signal is
+ *  treated as "could not verify", not as confirmation of anything. */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    p.catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
 export async function vetEndpoint(input: VetEndpointInput) {
   const hostname = extractHostname(input.endpoint);
   if (!hostname) return { error: "Could not parse a hostname from the endpoint." };
@@ -195,11 +209,12 @@ export async function vetEndpoint(input: VetEndpointInput) {
     ip = null;
   }
 
+  // Each signal is time-bounded so one hung sub-scan can't stall the whole verdict.
   const [tlsR, dnsR, threatDomainR, threatIpR, ageR] = await Promise.allSettled([
-    sslTlsAudit({ hostname }),
-    dnsSecurityCheck({ domain: hostname }),
-    threatIntelLookup({ indicator: hostname, indicator_type: "domain" }),
-    ip ? threatIntelLookup({ indicator: ip, indicator_type: "ip" }) : Promise.resolve(null),
+    withTimeout(sslTlsAudit({ hostname }), 25_000),
+    withTimeout(dnsSecurityCheck({ domain: hostname }), 15_000),
+    withTimeout(threatIntelLookup({ indicator: hostname, indicator_type: "domain" }), 15_000),
+    ip ? withTimeout(threatIntelLookup({ indicator: ip, indicator_type: "ip" }), 15_000) : Promise.resolve(null),
     getDomainAgeDays(hostname),
   ]);
 
