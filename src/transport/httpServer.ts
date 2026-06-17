@@ -12,6 +12,7 @@ import { createCustomer, findCustomerByEmail, addBalance } from "../db/customers
 import { createApiKey } from "../db/apiKeys.js";
 import { getCustomerUsage, logUsage } from "../db/usageLog.js";
 import { getJob } from "../db/scanJobs.js";
+import { resolveAgent } from "../db/agents.js";
 import {
   createCheckoutSession,
   verifyWebhookSignature,
@@ -412,8 +413,18 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
             })).toString("base64")
           );
           (req as any).x402Settled = true;
+          (req as any).payerWallet = verified.payerAddress;
           if (isDbConfigured()) {
+            // Resolve the x402 payer wallet to a persistent agent (best-effort) so
+            // the usage log + downstream scan persistence link to a stable identity.
+            // Stashed on req → carried into the request context → reused by wrapTool
+            // (no second resolve).
+            const x402Agent = verified.payerAddress
+              ? await resolveAgent({ walletAddress: verified.payerAddress }).catch(() => null)
+              : null;
+            (req as any).agent = x402Agent;
             await logUsage({
+              agent_id: x402Agent?.id,
               tool_name: toolName!,
               target: undefined,
               price_usd: toolPrice,
@@ -467,9 +478,15 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
           );
           // Mark request as x402-paid so wrapTool skips its own payment check
           (req as any).x402Settled = true;
+          (req as any).payerWallet = verified.payerAddress;
           // Log the x402-paid call
           if (isDbConfigured()) {
+            const x402Agent = verified.payerAddress
+              ? await resolveAgent({ walletAddress: verified.payerAddress }).catch(() => null)
+              : null;
+            (req as any).agent = x402Agent;
             await logUsage({
+              agent_id: x402Agent?.id,
               tool_name: toolName!,
               target: undefined,
               price_usd: toolPrice,
@@ -531,6 +548,8 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
           apiKey: req.apiKey,
           authMethod: x402Settled ? "x402" : req.authMethod,
           x402Settled,
+          payerWallet: (req as any).payerWallet,
+          agent: (req as any).agent,
           ip: req.ip,
           userAgent: req.headers["user-agent"],
         },

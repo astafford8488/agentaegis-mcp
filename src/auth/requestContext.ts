@@ -7,6 +7,7 @@
 
 import { AsyncLocalStorage } from "async_hooks";
 import type { APIKey } from "../db/types.js";
+import type { Agent } from "../db/agents.js";
 
 export interface RequestContext {
   apiKey?: APIKey;
@@ -15,6 +16,12 @@ export interface RequestContext {
   /** Set by the /mcp x402 gate when payment has been verified + settled.
    *  wrapTool sees this and skips its own payment check (call already paid for). */
   x402Settled?: boolean;
+  /** x402 payer wallet (lowercased 0x…), set by the gate after settlement. The
+   *  identity anchor for the x402 rail. */
+  payerWallet?: string;
+  /** Resolved Phase 9.0 agent identity. Lazily populated + memoized by
+   *  getOrResolveAgent so a request resolves identity at most once. */
+  agent?: Agent;
   ip?: string;
   userAgent?: string;
 }
