@@ -6,7 +6,7 @@ const GOOD: EndpointSignals = {
   reachable: true,
   tls: { available: true, grade: "A", certExpired: false, certDays: 200, weakTls: false, hsts: true },
   dns: { available: true, emailGrade: "A", dmarcEnforced: true, danglingCount: 0, caa: true },
-  threat: { available: true, verdict: "CLEAN", score: 0 },
+  threat: { available: true, flagged: false, suspicious: false, highConfidence: false, score: 0, ipOnly: false },
   domainAge: { available: true, ageDays: 1500 },
 };
 
@@ -19,10 +19,18 @@ describe("scoreEndpoint", () => {
     expect(r.trust_score).toBeGreaterThanOrEqual(75);
   });
 
-  it("BLOCKs when threat intel says MALICIOUS, regardless of other good signals", () => {
-    const r = scoreEndpoint(clone({ threat: { available: true, verdict: "MALICIOUS", score: 95 } }));
+  it("BLOCKs on a HIGH-CONFIDENCE malicious hit (abuse.ch / corroborated), regardless of other good signals", () => {
+    const r = scoreEndpoint(clone({ threat: { available: true, flagged: true, suspicious: true, highConfidence: true, score: 95 } }));
     expect(r.verdict).toBe("BLOCK");
     expect(r.trust_score).toBeLessThanOrEqual(25); // hard block reads as a low score
+  });
+
+  it("does NOT hard-block a single-source / IP-only flag — CAUTION, not BLOCK (the github.com false-positive)", () => {
+    // Popular domain flagged only via its shared hosting IP, no corroboration.
+    const r = scoreEndpoint(clone({ threat: { available: true, flagged: true, suspicious: true, highConfidence: false, score: 100, ipOnly: true } }));
+    expect(r.verdict).toBe("CAUTION");
+    expect(r.verdict).not.toBe("BLOCK");
+    expect(r.reasons.some((x) => /not corroborated/i.test(x))).toBe(true);
   });
 
   it("BLOCKs on an expired/invalid certificate (hard block)", () => {
@@ -42,9 +50,9 @@ describe("scoreEndpoint", () => {
     expect(r.verdict).toBe("BLOCK");
   });
 
-  it("treats SUSPICIOUS + weak TLS as CAUTION, not PROCEED", () => {
+  it("treats suspicious reputation + weak TLS as CAUTION, not PROCEED", () => {
     const r = scoreEndpoint(clone({
-      threat: { available: true, verdict: "SUSPICIOUS", score: 50 },
+      threat: { available: true, flagged: false, suspicious: true, highConfidence: false, score: 50 },
       tls: { available: true, grade: "C", certExpired: false, certDays: 100, weakTls: true, hsts: false },
     }));
     expect(r.verdict).not.toBe("PROCEED");

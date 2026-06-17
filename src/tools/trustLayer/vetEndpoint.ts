@@ -32,7 +32,14 @@ export interface EndpointSignals {
   reachable: boolean;
   tls: { available: boolean; grade?: string; certExpired?: boolean; certDays?: number; weakTls?: boolean; hsts?: boolean };
   dns: { available: boolean; emailGrade?: string; dmarcEnforced?: boolean; danglingCount?: number; caa?: boolean };
-  threat: { available: boolean; verdict?: "CLEAN" | "SUSPICIOUS" | "MALICIOUS"; score?: number };
+  threat: {
+    available: boolean;
+    flagged?: boolean; // any source called it malicious
+    suspicious?: boolean; // any source non-clean
+    highConfidence?: boolean; // high-precision hit (abuse.ch) or domain+IP corroborated
+    score?: number;
+    ipOnly?: boolean; // flagged only via the resolved (possibly shared) IP
+  };
   domainAge: { available: boolean; ageDays?: number | null };
 }
 
@@ -52,14 +59,23 @@ export function scoreEndpoint(s: EndpointSignals): { trust_score: number; verdic
     reasons.push("Endpoint does not resolve in DNS — cannot confirm it exists.");
   }
 
-  // Threat intel — the strongest signal.
+  // Threat intel — interpreted to avoid false-positiving legitimate infra.
+  // IP reputation (AbuseIPDB on a shared/CDN IP) and OTX pulse counts flag many
+  // popular, benign domains, so a single noisy "malicious" is only CAUTION. A
+  // hard BLOCK requires high precision: a curated abuse.ch hit (URLhaus /
+  // ThreatFox / MalwareBazaar) or the domain AND its resolved IP both flagged.
   if (s.threat.available) {
-    if (s.threat.verdict === "MALICIOUS") {
+    if (s.threat.highConfidence) {
       hardBlock = true;
-      reasons.push(`Threat intel flags this endpoint as MALICIOUS (reputation ${s.threat.score ?? "?"}/100).`);
-    } else if (s.threat.verdict === "SUSPICIOUS") {
-      score -= 40;
-      reasons.push(`Threat intel flags this endpoint as SUSPICIOUS (reputation ${s.threat.score ?? "?"}/100).`);
+      reasons.push(`Confirmed malicious — high-precision threat-intel hit (reputation ${s.threat.score ?? "?"}/100).`);
+    } else if (s.threat.flagged) {
+      score -= 35;
+      reasons.push(
+        `Flagged in threat feeds${s.threat.ipOnly ? " on the hosting IP (may be shared infrastructure)" : ""} but not corroborated — verify before transacting (reputation ${s.threat.score ?? "?"}/100).`,
+      );
+    } else if (s.threat.suspicious) {
+      score -= 20;
+      reasons.push("Some suspicious reputation signals in threat feeds.");
     } else {
       reasons.push("No malicious reputation found in threat-intel feeds.");
     }
@@ -195,14 +211,21 @@ export async function vetEndpoint(input: VetEndpointInput) {
   const ti = settled(threatIpR);
   const age = settled(ageR) as number | null;
 
-  // Threat = the worse of the domain and resolved-IP lookups.
-  const rank: Record<string, number> = { CLEAN: 0, SUSPICIOUS: 1, MALICIOUS: 2 };
-  const threatVals = [td, ti].filter((x) => x && !x.error && x.verdict);
-  let threat: EndpointSignals["threat"] = { available: false };
-  if (threatVals.length) {
-    const worst = threatVals.reduce((a, b) => (rank[b.verdict] > rank[a.verdict] ? b : a));
-    threat = { available: true, verdict: worst.verdict, score: worst.reputation_score };
-  }
+  // Threat = combine the domain and resolved-IP lookups, but distinguish
+  // high-precision hits from noisy reputation (see scoreEndpoint for why).
+  const domainMal = !!(td && !td.error && td.verdict === "MALICIOUS");
+  const ipMal = !!(ti && !ti.error && ti.verdict === "MALICIOUS");
+  const anySuspicious = !!((td && !td.error && td.verdict && td.verdict !== "CLEAN") || (ti && !ti.error && ti.verdict && ti.verdict !== "CLEAN"));
+  const abusechHit = (x: any) => Array.isArray(x?.sources?.abuse_ch) && x.sources.abuse_ch.some((r: any) => r?.found);
+  const threatAvailable = !!((td && !td.error) || (ti && !ti.error));
+  const threat: EndpointSignals["threat"] = {
+    available: threatAvailable,
+    flagged: domainMal || ipMal,
+    suspicious: anySuspicious,
+    highConfidence: abusechHit(td) || abusechHit(ti) || (domainMal && ipMal),
+    score: Math.max(td?.reputation_score || 0, ti?.reputation_score || 0),
+    ipOnly: ipMal && !domainMal,
+  };
 
   const signals: EndpointSignals = {
     reachable: !!ip,
