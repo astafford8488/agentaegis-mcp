@@ -34,11 +34,10 @@ export interface EndpointSignals {
   dns: { available: boolean; emailGrade?: string; dmarcEnforced?: boolean; danglingCount?: number; caa?: boolean };
   threat: {
     available: boolean;
-    flagged?: boolean; // any source called it malicious
-    suspicious?: boolean; // any source non-clean
-    highConfidence?: boolean; // high-precision hit (abuse.ch) or domain+IP corroborated
-    score?: number;
-    ipOnly?: boolean; // flagged only via the resolved (possibly shared) IP
+    blocked?: boolean; // curated active-malware-feed hit (abuse.ch) — the ONLY block signal
+    repFlagged?: boolean; // AbuseIPDB/OTX reputation flag — informational only (too noisy for popular infra)
+    repScore?: number;
+    ipOnly?: boolean; // reputation flag came only from the resolved (often shared/CDN) IP
   };
   domainAge: { available: boolean; ageDays?: number | null };
 }
@@ -59,25 +58,24 @@ export function scoreEndpoint(s: EndpointSignals): { trust_score: number; verdic
     reasons.push("Endpoint does not resolve in DNS — cannot confirm it exists.");
   }
 
-  // Threat intel — interpreted to avoid false-positiving legitimate infra.
-  // IP reputation (AbuseIPDB on a shared/CDN IP) and OTX pulse counts flag many
-  // popular, benign domains, so a single noisy "malicious" is only CAUTION. A
-  // hard BLOCK requires high precision: a curated abuse.ch hit (URLhaus /
-  // ThreatFox / MalwareBazaar) or the domain AND its resolved IP both flagged.
+  // Threat intel. Corpus testing showed AbuseIPDB IP-scores and OTX pulse-counts
+  // flag almost ALL popular infrastructure (shared/CDN IPs collect abuse reports;
+  // big domains are referenced in countless threat pulses) — Cloudflare, Coinbase,
+  // Stripe, GitHub all came back "malicious." Those feeds are too noisy to gate a
+  // payment on. So ONLY a curated active-malware-feed hit (abuse.ch URLhaus /
+  // ThreatFox / MalwareBazaar — listed because it is actively serving malware)
+  // hard-blocks. AbuseIPDB/OTX reputation is surfaced as an informational note
+  // with NO score impact.
   if (s.threat.available) {
-    if (s.threat.highConfidence) {
+    if (s.threat.blocked) {
       hardBlock = true;
-      reasons.push(`Confirmed malicious — high-precision threat-intel hit (reputation ${s.threat.score ?? "?"}/100).`);
-    } else if (s.threat.flagged) {
-      score -= 35;
+      reasons.push("Listed on a curated active-malware feed (abuse.ch URLhaus / ThreatFox) — actively malicious.");
+    } else if (s.threat.repFlagged) {
       reasons.push(
-        `Flagged in threat feeds${s.threat.ipOnly ? " on the hosting IP (may be shared infrastructure)" : ""} but not corroborated — verify before transacting (reputation ${s.threat.score ?? "?"}/100).`,
+        `Note: elevated reputation chatter (${s.threat.repScore ?? "?"}/100${s.threat.ipOnly ? ", on the hosting IP" : ""}) — common for popular or shared/CDN infrastructure; not treated as a block signal.`,
       );
-    } else if (s.threat.suspicious) {
-      score -= 20;
-      reasons.push("Some suspicious reputation signals in threat feeds.");
     } else {
-      reasons.push("No malicious reputation found in threat-intel feeds.");
+      reasons.push("No active-malware-feed listings.");
     }
   } else {
     score -= 5;
@@ -119,15 +117,16 @@ export function scoreEndpoint(s: EndpointSignals): { trust_score: number; verdic
     reasons.push("Domain registration age unavailable (RDAP not supported for this TLD).");
   }
 
-  // DNS hygiene.
+  // DNS hygiene. Only the dangling-CNAME check is scored — that's a genuine
+  // takeover risk for an endpoint. SPF/DKIM/DMARC email-auth posture is NOT a
+  // payment-safety signal here (API subdomains legitimately carry no email
+  // records — penalizing api.example.com for an "F" email grade is a false ding),
+  // so it is informational only.
   if (s.dns.available) {
     if ((s.dns.danglingCount ?? 0) > 0) {
       score -= 20;
       reasons.push(`${s.dns.danglingCount} dangling CNAME(s) detected — subdomain-takeover risk.`);
     }
-    if (s.dns.emailGrade === "F") { score -= 10; reasons.push("Email-auth posture (SPF/DKIM/DMARC) graded F."); }
-    else if (s.dns.emailGrade === "D") { score -= 5; reasons.push("Email-auth posture graded D."); }
-    if (s.dns.dmarcEnforced === false) { score -= 5; reasons.push("DMARC not enforced — domain is spoofable."); }
   }
 
   score = Math.max(0, Math.min(100, score));
@@ -211,19 +210,17 @@ export async function vetEndpoint(input: VetEndpointInput) {
   const ti = settled(threatIpR);
   const age = settled(ageR) as number | null;
 
-  // Threat = combine the domain and resolved-IP lookups, but distinguish
-  // high-precision hits from noisy reputation (see scoreEndpoint for why).
+  // Threat: only a curated active-malware-feed hit (abuse.ch) is a block signal.
+  // AbuseIPDB IP-scores / OTX pulse-counts are recorded as informational reputation
+  // (see scoreEndpoint for the corpus-driven rationale).
   const domainMal = !!(td && !td.error && td.verdict === "MALICIOUS");
   const ipMal = !!(ti && !ti.error && ti.verdict === "MALICIOUS");
-  const anySuspicious = !!((td && !td.error && td.verdict && td.verdict !== "CLEAN") || (ti && !ti.error && ti.verdict && ti.verdict !== "CLEAN"));
   const abusechHit = (x: any) => Array.isArray(x?.sources?.abuse_ch) && x.sources.abuse_ch.some((r: any) => r?.found);
-  const threatAvailable = !!((td && !td.error) || (ti && !ti.error));
   const threat: EndpointSignals["threat"] = {
-    available: threatAvailable,
-    flagged: domainMal || ipMal,
-    suspicious: anySuspicious,
-    highConfidence: abusechHit(td) || abusechHit(ti) || (domainMal && ipMal),
-    score: Math.max(td?.reputation_score || 0, ti?.reputation_score || 0),
+    available: !!((td && !td.error) || (ti && !ti.error)),
+    blocked: abusechHit(td) || abusechHit(ti),
+    repFlagged: domainMal || ipMal,
+    repScore: Math.max(td?.reputation_score || 0, ti?.reputation_score || 0),
     ipOnly: ipMal && !domainMal,
   };
 
