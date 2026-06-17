@@ -11,6 +11,55 @@ import * as crypto from "crypto";
 import { fileURLToPath } from "url";
 import { getDb, isDbConfigured } from "../db/client.js";
 
+// Tool handlers for the admin dry-run QA endpoint — runs a tool with NO billing,
+// NO x402, NO scan persistence. Operator-only (admin-token gated); lets us
+// validate/calibrate tools on prod (real engines + API keys) for free.
+import { complianceFrameworkCheck } from "../tools/compliance/complianceFrameworkCheck.js";
+import { evidenceCollect } from "../tools/compliance/evidenceCollect.js";
+import { controlGapAnalysis } from "../tools/compliance/controlGapAnalysis.js";
+import { auditReportGenerate } from "../tools/compliance/auditReportGenerate.js";
+import { policyGenerate } from "../tools/compliance/policyGenerate.js";
+import { vulnScanNetwork } from "../tools/vulnManagement/vulnScanNetwork.js";
+import { vulnScanWebApp } from "../tools/vulnManagement/vulnScanWebApp.js";
+import { vulnPrioritize } from "../tools/vulnManagement/vulnPrioritize.js";
+import { cveLookup } from "../tools/vulnManagement/cveLookup.js";
+import { sslTlsAudit } from "../tools/vulnManagement/sslTlsAudit.js";
+import { sastScan } from "../tools/codeSecurity/sastScan.js";
+import { secretScan } from "../tools/codeSecurity/secretScan.js";
+import { dependencyAudit } from "../tools/codeSecurity/dependencyAudit.js";
+import { incidentTriage } from "../tools/blueTeam/incidentTriage.js";
+import { threatIntelLookup } from "../tools/blueTeam/threatIntelLookup.js";
+import { dnsSecurityCheck } from "../tools/blueTeam/dnsSecurityCheck.js";
+import { emailSecurityAudit } from "../tools/blueTeam/emailSecurityAudit.js";
+import { accessReview } from "../tools/identity/accessReview.js";
+import { mfaAudit } from "../tools/identity/mfaAudit.js";
+import { credentialCheck } from "../tools/offensive/credentialCheck.js";
+import { vetEndpoint } from "../tools/trustLayer/vetEndpoint.js";
+
+const DRY_RUN_TOOLS: Record<string, (args: any) => Promise<any>> = {
+  compliance_framework_check: complianceFrameworkCheck,
+  evidence_collect: evidenceCollect,
+  control_gap_analysis: controlGapAnalysis,
+  audit_report_generate: auditReportGenerate,
+  policy_generate: policyGenerate,
+  vuln_scan_network: vulnScanNetwork,
+  vuln_scan_web_app: vulnScanWebApp,
+  vuln_prioritize: vulnPrioritize,
+  cve_lookup: cveLookup,
+  ssl_tls_audit: sslTlsAudit,
+  sast_scan: sastScan,
+  secret_scan: secretScan,
+  dependency_audit: dependencyAudit,
+  incident_triage: incidentTriage,
+  threat_intel_lookup: threatIntelLookup,
+  dns_security_check: dnsSecurityCheck,
+  email_security_audit: emailSecurityAudit,
+  access_review: accessReview,
+  mfa_audit: mfaAudit,
+  credential_check: credentialCheck,
+  vet_endpoint: vetEndpoint,
+};
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function checkAdminAuth(req: Request, res: Response, next: NextFunction) {
@@ -66,6 +115,35 @@ export function buildAdminRouter(): Router {
       res.json({ payTo, network: process.env.X402_NETWORK, cdp_mode: Boolean(process.env.CDP_API_KEY_ID && process.env.CDP_API_KEY_SECRET), listed_by_payTo: byPayTo, search_results: bySearch });
     } catch (e: unknown) {
       res.status(500).json({ error: String(e) });
+    }
+  });
+
+  // === Tool dry-run (operator QA) ===
+  // Run any analysis tool with NO billing, NO x402, NO scan persistence — for
+  // validating/calibrating tools on prod (real engines + API keys). Admin-token
+  // gated, so agents can't reach it. NOTE: active scanners (vuln_scan_network /
+  // vuln_scan_web_app) must only target hosts you own or sanctioned test targets
+  // (scanme.nmap.org, testphp.vulnweb.com) — running them elsewhere is abuse.
+  router.get("/dry-run", checkAdminAuth, (_req: Request, res: Response) => {
+    res.json({
+      usage: 'POST /admin/dry-run {"tool":"<name>","args":{...}} — runs the tool with no billing/persistence (QA only)',
+      tools: Object.keys(DRY_RUN_TOOLS),
+    });
+  });
+
+  router.post("/dry-run", checkAdminAuth, async (req: Request, res: Response) => {
+    const tool = (req.body?.tool as string) || "";
+    const args = req.body?.args ?? {};
+    const handler = DRY_RUN_TOOLS[tool];
+    if (!handler) {
+      return res.status(400).json({ error: `Unknown tool '${tool}'`, available: Object.keys(DRY_RUN_TOOLS) });
+    }
+    const started = Date.now();
+    try {
+      const result = await handler(args);
+      res.json({ tool, args, duration_ms: Date.now() - started, result });
+    } catch (err) {
+      res.status(500).json({ tool, args, duration_ms: Date.now() - started, error: String(err) });
     }
   });
 
