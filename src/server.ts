@@ -236,8 +236,13 @@ export function buildMcpServer(options: ServerOptions = {}): McpServer {
   registerPaidTool(server, "access_review", "Audit user access against least-privilege.", accessReviewSchema.shape, accessReview, options);
   registerPaidTool(server, "mfa_audit", "Assess MFA coverage and strength.", mfaAuditSchema.shape, mfaAudit, options);
 
-  // Offensive
-  registerPaidTool(server, "credential_check", "Check email/domain in breach databases (HIBP).", credentialCheckSchema.shape, credentialCheck, options);
+  // Offensive — credential_check's only data source is HIBP, which has no
+  // fallback. x402 settles payment BEFORE the tool runs, so exposing it without
+  // a key means a caller pays and just gets "HIBP_API_KEY not configured". Only
+  // register it when the key is set (it auto-enables once HIBP_API_KEY is added).
+  if (process.env.HIBP_API_KEY) {
+    registerPaidTool(server, "credential_check", "Check email/domain in breach databases (HIBP).", credentialCheckSchema.shape, credentialCheck, options);
+  }
 
   // Trust Layer (L2) — the flagship. Composite PROCEED/CAUTION/BLOCK verdict for
   // an endpoint an agent is about to call or pay: TLS + DNS hygiene + threat

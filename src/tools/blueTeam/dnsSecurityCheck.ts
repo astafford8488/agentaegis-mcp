@@ -159,19 +159,24 @@ function analyzeDMARC(record?: string): object {
 }
 
 async function checkDKIM(domain: string): Promise<object> {
-  const commonSelectors = ["google", "selector1", "selector2", "k1", "default", "dkim", "mail"];
-  const found: string[] = [];
+  // Common selectors across major providers — Google/M365, Resend & AWS SES
+  // (resend), SendGrid (s1/s2), Mailgun, Mailchimp/Mandrill (k1/k2/k3), Proton,
+  // Zoho, Fastmail. Checked in parallel. (Not exhaustive — custom selectors exist.)
+  const commonSelectors = [
+    "google", "selector1", "selector2", "k1", "k2", "k3", "default", "dkim", "dkim1", "mail",
+    "resend", "s1", "s2", "smtp", "mandrill", "mailgun", "mg", "sendgrid",
+    "protonmail", "protonmail2", "protonmail3", "zmail", "fm1", "fm2", "fm3", "mte1",
+  ];
 
-  for (const selector of commonSelectors) {
-    try {
+  const checks = await Promise.allSettled(
+    commonSelectors.map(async (selector) => {
       const records = await dns.resolveTxt(`${selector}._domainkey.${domain}`);
-      if (records.length > 0) {
-        found.push(selector);
-      }
-    } catch {
-      // Selector not found
-    }
-  }
+      return records.length > 0 ? selector : null;
+    }),
+  );
+  const found = checks
+    .filter((r): r is PromiseFulfilledResult<string> => r.status === "fulfilled" && !!r.value)
+    .map((r) => r.value);
 
   return {
     selectors_found: found,
