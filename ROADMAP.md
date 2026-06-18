@@ -57,13 +57,10 @@ These are small cleanups that don't block anything but should get done.
 Findings #2, #3, #11 from the Phase 4 audit. Email auth and CAA records.
 
 #### `agentaegis.org` zone
-```
-_dmarc      TXT    v=DMARC1; p=quarantine; rua=mailto:dmarc@agentaegis.org; pct=100; sp=quarantine; fo=1
-@           CAA    0 issue "letsencrypt.org"
-@           CAA    0 issuewild "letsencrypt.org"
-@           CAA    0 iodef "mailto:admin@youraigroup.com"
-```
-(SPF + DKIM already added by Resend — verified.)
+✅ **DONE 2026-06-17** (via Cloudflare API): `_dmarc` TXT (`v=DMARC1; p=quarantine; rua=mailto:dmarc@agentaegis.org; pct=100; sp=quarantine; fo=1`) + apex SPF (`v=spf1 include:amazonses.com ~all`). Safe because Resend DKIM is apex-aligned (mail passes DMARC via DKIM). DKIM + `send.` SPF were already present.
+
+⚠️ **DO NOT add the old CAA records below** — agentaegis.org is Cloudflare-fronted, and Cloudflare issues certs via Google Trust Services / others, so a `letsencrypt.org`-only CAA would **break cert renewal**. If CAA is ever wanted, it must include Cloudflare's full CA set (`pki.goog`, `letsencrypt.org`, `digicert.com`, `sectigo.com`, `ssl.com`, `comodoca.com`) — otherwise leave CAA unset.
+~~`@ CAA 0 issue "letsencrypt.org"` / `issuewild` / `iodef`~~ — retired (landmine).
 
 #### `youraigroup.com` zone
 ```
