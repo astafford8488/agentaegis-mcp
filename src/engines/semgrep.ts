@@ -39,10 +39,18 @@ export async function runSemgrepScan(
     : severityThreshold === "warning" ? "--severity=WARNING,ERROR"
     : "";
 
+  // Use a fixed curated pack, NOT --config=auto. `auto` profiles the *project* to
+  // choose rules; for a context-less single-file temp dir (our code_snippet path)
+  // it resolves to ~no rules → zero findings (validation sweep caught this — it
+  // missed a textbook os.system(input()) command injection). p/default is a fixed,
+  // security-inclusive ruleset fetched over the working runtime egress and cached;
+  // --metrics=off keeps it from phoning home. Override via SEMGREP_CONFIG.
+  const config = process.env.SEMGREP_CONFIG || "p/default";
   const args = [
     "scan",
-    "--config=auto",
+    `--config=${config}`,
     "--json",
+    "--metrics=off",
     "--no-git-ignore",
     "--max-target-bytes=1000000",
   ];
