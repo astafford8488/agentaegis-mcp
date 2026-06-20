@@ -73,6 +73,10 @@ USER aegis
 
 EXPOSE 3000
 
+# HOME must be set for the non-root user, or Python tools that write a settings/
+# cache dir (Semgrep especially) fail silently — which made sast_scan return zero
+# findings even with rules present (validation sweep).
+ENV HOME=/home/aegis
 ENV NODE_ENV=production
 
 CMD ["node", "dist/http-server.js"]

@@ -64,11 +64,22 @@ export async function runSemgrepScan(
     { timeout: 300_000 }
   );
 
-  if (!result.stdout) return [];
+  // Surface failures instead of silently returning [] (this masked a config issue
+  // the validation sweep caught — Semgrep ran but loaded/matched no rules).
+  if (!result.stdout) {
+    throw new Error(`semgrep no stdout (exit ${result.exitCode}): ${(result.stderr || "(none)").slice(0, 600)}`);
+  }
 
+  let parsedResult: SemgrepResult;
   try {
-    const parsed: SemgrepResult = JSON.parse(result.stdout);
-    return parsed.results.map((r) => ({
+    parsedResult = JSON.parse(result.stdout);
+  } catch {
+    throw new Error(`semgrep non-JSON (exit ${result.exitCode}): out=${result.stdout.slice(0, 150)} err=${(result.stderr || "").slice(0, 400)}`);
+  }
+
+  {
+    const parsed = parsedResult;
+    const findings = parsed.results.map((r) => ({
       id: `semgrep-${r.check_id}-${r.path}-${r.start.line}`,
       title: r.check_id.split(".").pop() || r.check_id,
       description: r.extra.message,
@@ -80,7 +91,11 @@ export async function runSemgrepScan(
       remediation: r.extra.fix || `Review and fix the security issue at ${r.path}:${r.start.line}`,
       references: r.extra.metadata?.references,
     }));
-  } catch {
-    return [];
+    // TEMP diagnostic: surface Semgrep's stderr (rule count / skip warnings) when
+    // nothing matched, so we can see WHY (revert once the config is confirmed).
+    if (findings.length === 0) {
+      throw new Error(`semgrep 0-findings diag (exit ${result.exitCode}): ${(result.stderr || "(no stderr)").slice(0, 700)}`);
+    }
+    return findings;
   }
 }
