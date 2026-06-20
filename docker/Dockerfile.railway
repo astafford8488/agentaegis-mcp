@@ -16,15 +16,25 @@ RUN apt-get update && apt-get install -y \
 RUN pip3 install --break-system-packages sslyze semgrep
 
 # Bundle Semgrep rules INTO the image. The locked-down runtime container can't
-# fetch rules from the registry (and the non-root user can't write Semgrep's
-# cache), so --config=auto / p/default resolve to ZERO rules → sast_scan finds
-# nothing (validation sweep caught this). Clone the registry rules at build time
-# (network available here) and point SEMGREP_CONFIG at the local copy so scans
-# are offline + deterministic. semgrep.ts reads SEMGREP_CONFIG.
-RUN git clone --depth 1 https://github.com/semgrep/semgrep-rules.git /opt/semgrep-rules \
-    && rm -rf /opt/semgrep-rules/.git \
-    && chmod -R a+rX /opt/semgrep-rules
-ENV SEMGREP_CONFIG=/opt/semgrep-rules
+# fetch rules from the registry, so --config=auto / p/default resolve to ZERO
+# rules → sast_scan finds nothing. We clone the registry rules at build time
+# (network available here) but must NOT point SEMGREP_CONFIG at the repo ROOT:
+# its templates, jsonnet libs and test-fixture YAML are invalid as standalone
+# rules, so Semgrep exits 7 ("≥1 invalid rule") and returns zero findings. Instead
+# we assemble a curated ruleset from just the `security` rule dirs (command
+# injection, SQLi, XSS, crypto, deserialization, SSRF, path traversal, …) — the
+# high-value SAST coverage — strip non-YAML fixtures, and point SEMGREP_CONFIG
+# there for offline, deterministic scans. semgrep.ts reads SEMGREP_CONFIG and
+# tolerates a residual exit 7 (logs invalid rules, keeps valid findings).
+RUN git clone --depth 1 https://github.com/semgrep/semgrep-rules.git /tmp/semgrep-rules \
+    && mkdir -p /opt/aegis-rules \
+    && n=0; for d in $(find /tmp/semgrep-rules -type d -name security); do cp -r "$d" "/opt/aegis-rules/pack-$n"; n=$((n+1)); done \
+    && find /opt/aegis-rules -type f ! \( -name '*.yaml' -o -name '*.yml' \) -delete \
+    && find /opt/aegis-rules -depth -type d -empty -delete \
+    && rm -rf /tmp/semgrep-rules \
+    && chmod -R a+rX /opt/aegis-rules \
+    && echo "[build] aegis-rules YAML count:" $(find /opt/aegis-rules -name '*.y*ml' | wc -l)
+ENV SEMGREP_CONFIG=/opt/aegis-rules
 
 # Install trufflehog
 RUN curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin

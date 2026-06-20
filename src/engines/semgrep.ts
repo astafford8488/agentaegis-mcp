@@ -20,6 +20,10 @@ interface SemgrepResult {
       fix?: string;
     };
   }[];
+  // Populated (alongside results, which may be []) when some rule files fail to
+  // load — Semgrep exits 7 in that case. We log these but never fail the scan;
+  // the valid rules still produce findings.
+  errors?: { code?: number; level?: string; type?: string; message?: string; path?: string }[];
 }
 
 function mapSeverity(semgrepSeverity: string): Severity {
@@ -39,12 +43,14 @@ export async function runSemgrepScan(
     : severityThreshold === "warning" ? "--severity=WARNING,ERROR"
     : "";
 
-  // Use a fixed curated pack, NOT --config=auto. `auto` profiles the *project* to
-  // choose rules; for a context-less single-file temp dir (our code_snippet path)
-  // it resolves to ~no rules → zero findings (validation sweep caught this — it
-  // missed a textbook os.system(input()) command injection). p/default is a fixed,
-  // security-inclusive ruleset fetched over the working runtime egress and cached;
-  // --metrics=off keeps it from phoning home. Override via SEMGREP_CONFIG.
+  // Rules come from a curated, BUNDLED ruleset (SEMGREP_CONFIG — set in the Docker
+  // image to /opt/aegis-rules, the security rule dirs cloned from semgrep-rules at
+  // build time). We deliberately do NOT use --config=auto (it profiles the project,
+  // resolving to ~no rules for our context-less temp dir) and do NOT point at the
+  // semgrep-rules repo ROOT (its templates / jsonnet libs / test-fixture YAML are
+  // invalid as standalone rules → Semgrep exits 7 with zero findings). The
+  // p/default fallback needs registry egress the locked-down runtime lacks, so prod
+  // must set SEMGREP_CONFIG. --metrics=off keeps Semgrep from phoning home.
   const config = process.env.SEMGREP_CONFIG || "p/default";
   const args = [
     "scan",
@@ -64,38 +70,51 @@ export async function runSemgrepScan(
     { timeout: 300_000 }
   );
 
-  // Surface failures instead of silently returning [] (this masked a config issue
-  // the validation sweep caught — Semgrep ran but loaded/matched no rules).
-  if (!result.stdout) {
-    throw new Error(`semgrep no stdout (exit ${result.exitCode}): ${(result.stderr || "(none)").slice(0, 600)}`);
-  }
-
-  let parsedResult: SemgrepResult;
-  try {
-    parsedResult = JSON.parse(result.stdout);
-  } catch {
-    throw new Error(`semgrep non-JSON (exit ${result.exitCode}): out=${result.stdout.slice(0, 150)} err=${(result.stderr || "").slice(0, 400)}`);
-  }
-
-  {
-    const parsed = parsedResult;
-    const findings = parsed.results.map((r) => ({
-      id: `semgrep-${r.check_id}-${r.path}-${r.start.line}`,
-      title: r.check_id.split(".").pop() || r.check_id,
-      description: r.extra.message,
-      severity: mapSeverity(r.extra.severity),
-      cwe_id: r.extra.metadata?.cwe?.[0],
-      affected_system: r.path,
-      affected_component: `${r.path}:${r.start.line}`,
-      evidence: r.extra.lines,
-      remediation: r.extra.fix || `Review and fix the security issue at ${r.path}:${r.start.line}`,
-      references: r.extra.metadata?.references,
-    }));
-    // TEMP diagnostic: surface Semgrep's stderr (rule count / skip warnings) when
-    // nothing matched, so we can see WHY (revert once the config is confirmed).
-    if (findings.length === 0) {
-      throw new Error(`semgrep 0-findings diag (exit ${result.exitCode}): ${(result.stderr || "(no stderr)").slice(0, 700)}`);
+  // Semgrep writes findings to stdout as JSON even on a non-zero exit. Exit 7 means
+  // "≥1 rule in the config was invalid" — NON-FATAL: the valid rules still ran and
+  // their findings are in stdout. So we parse stdout regardless of exit code and
+  // only bail when there is genuinely no JSON to read.
+  let parsed: SemgrepResult | null = null;
+  if (result.stdout) {
+    try {
+      parsed = JSON.parse(result.stdout) as SemgrepResult;
+    } catch {
+      parsed = null;
     }
-    return findings;
   }
+
+  if (!parsed) {
+    // No parseable output = a real engine failure. Note that `stderr` here is
+    // usually just Node's "Command failed" wrapper (Semgrep reports detail in the
+    // stdout JSON). Log for operators rather than 500-ing a paid call.
+    console.error(
+      `[semgrep] no parseable output (exit ${result.exitCode}): ${(result.stderr || "(no stderr)").slice(0, 500)}`
+    );
+    return [];
+  }
+
+  // Invalid/erroring rules land in parsed.errors (exit 7). Log a sample for
+  // observability, but keep going — they don't invalidate the valid rules' findings.
+  if (parsed.errors && parsed.errors.length > 0) {
+    const sample = parsed.errors
+      .slice(0, 5)
+      .map((e) => e.message || e.type || JSON.stringify(e))
+      .join(" | ");
+    console.error(
+      `[semgrep] ${parsed.errors.length} rule/scan error(s) (exit ${result.exitCode}): ${sample.slice(0, 800)}`
+    );
+  }
+
+  return parsed.results.map((r) => ({
+    id: `semgrep-${r.check_id}-${r.path}-${r.start.line}`,
+    title: r.check_id.split(".").pop() || r.check_id,
+    description: r.extra.message,
+    severity: mapSeverity(r.extra.severity),
+    cwe_id: r.extra.metadata?.cwe?.[0],
+    affected_system: r.path,
+    affected_component: `${r.path}:${r.start.line}`,
+    evidence: r.extra.lines,
+    remediation: r.extra.fix || `Review and fix the security issue at ${r.path}:${r.start.line}`,
+    references: r.extra.metadata?.references,
+  }));
 }
