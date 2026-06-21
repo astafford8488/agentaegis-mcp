@@ -57,6 +57,33 @@ export interface CVEDetail {
 const cache = new Map<string, { data: CVEDetail; timestamp: number }>();
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
+// NVD's API returns transient 503s and 429 rate-limits (especially without a key).
+// A paid cve_lookup that hits one used to fail the whole call even though the caller
+// already settled x402. Retry a few times with a short backoff so an upstream blip
+// doesn't burn a paid request. Non-5xx/429 responses (incl. 404) return immediately.
+async function fetchNvdWithRetry(url: string, headers: Record<string, string>, attempts = 3): Promise<Response> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const response = await fetch(url, { headers });
+      if ((response.status >= 500 || response.status === 429) && i < attempts - 1) {
+        lastErr = new Error(`NVD API error: ${response.status}`);
+        await new Promise((r) => setTimeout(r, 600 * (i + 1)));
+        continue;
+      }
+      return response;
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1) {
+        await new Promise((r) => setTimeout(r, 600 * (i + 1)));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr;
+}
+
 export async function lookupCVE(cveId: string): Promise<CVEDetail | null> {
   const cached = cache.get(cveId);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -70,7 +97,7 @@ export async function lookupCVE(cveId: string): Promise<CVEDetail | null> {
   const url = `https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=${encodeURIComponent(cveId)}`;
 
   try {
-    const response = await fetch(url, { headers });
+    const response = await fetchNvdWithRetry(url, headers);
     if (!response.ok) {
       if (response.status === 404) return null;
       throw new Error(`NVD API error: ${response.status}`);

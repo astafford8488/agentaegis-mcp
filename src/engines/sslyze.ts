@@ -40,18 +40,25 @@ export async function runSSLAudit(hostname: string, port: number = 443): Promise
   const result = await execInSandbox(
     process.env.SSLYZE_PATH || "sslyze",
     ["--json_out=-", target],
-    { timeout: 120_000 }
+    { timeout: 60_000 } // bounded — a scanner-blocking host (e.g. badssl) used to hang the full 120s
   );
 
-  if (result.exitCode !== 0 && !result.stdout) {
-    throw new Error(`sslyze scan failed: ${result.stderr}`);
+  // Timed out or failed with no output → return a graceful "could not complete"
+  // result instead of throwing. The 120s hang on a scanner-blocking host used to
+  // surface as a 500 on the standalone ssl_tls_audit path; now the caller gets a
+  // "U" grade that explains why. (vet_endpoint bounds this separately via withTimeout.)
+  if (!result.stdout) {
+    const reason = result.exitCode === 124
+      ? "scan timed out — the host may be blocking or tarpitting scanners"
+      : `scanner error: ${(result.stderr || "unknown").slice(0, 200)}`;
+    return buildFallbackResult(hostname, reason);
   }
 
   try {
     const parsed = JSON.parse(result.stdout);
     return parseSSLyzeOutput(hostname, parsed);
   } catch {
-    return buildFallbackResult(hostname, result.stdout);
+    return buildFallbackResult(hostname, "scanner returned unparseable output");
   }
 }
 
@@ -157,7 +164,7 @@ function parseSSLyzeOutput(hostname: string, data: Record<string, unknown>): SSL
   return out;
 }
 
-function buildFallbackResult(hostname: string, _rawOutput: string): SSLAuditResult {
+function buildFallbackResult(hostname: string, reason: string): SSLAuditResult {
   return {
     hostname,
     certificate: {
@@ -176,7 +183,7 @@ function buildFallbackResult(hostname: string, _rawOutput: string): SSLAuditResu
     vulnerabilities: { heartbleed: false, robot: false, beast: false, poodle: false, crime: false },
     hsts: { enabled: false },
     ocsp_stapling: false,
-    grade: { grade: "U", score: 0, issues: ["Unable to complete SSL scan"] },
+    grade: { grade: "U", score: 0, issues: [`Unable to complete SSL scan: ${reason}`] },
   };
 }
 

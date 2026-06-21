@@ -1,4 +1,5 @@
 import { execInSandbox } from "../utils/sandbox.js";
+import * as fs from "fs";
 import type { Finding, Severity } from "../types/security.js";
 
 interface SemgrepResult {
@@ -32,6 +33,22 @@ function mapSeverity(semgrepSeverity: string): Severity {
     case "WARNING": return "medium";
     case "INFO": return "low";
     default: return "info";
+  }
+}
+
+// Semgrep stamps `extra.lines` with the literal "requires login" for some registry
+// rules when run offline/unauthenticated — useless as evidence on a paid finding.
+// When that happens (or lines are empty), reconstruct the matched source from the
+// scanned file so the output shows the actual vulnerable code. Best-effort.
+function resolveEvidence(lines: string | undefined, filePath: string, start: number, end: number): string {
+  const trimmed = (lines || "").trim();
+  if (trimmed && trimmed.toLowerCase() !== "requires login") return lines as string;
+  try {
+    const content = fs.readFileSync(filePath, "utf-8").split(/\r?\n/);
+    const snippet = content.slice(Math.max(0, start - 1), end).join("\n").trim();
+    return snippet || (lines || "");
+  } catch {
+    return lines || "";
   }
 }
 
@@ -113,7 +130,7 @@ export async function runSemgrepScan(
     cwe_id: r.extra.metadata?.cwe?.[0],
     affected_system: r.path,
     affected_component: `${r.path}:${r.start.line}`,
-    evidence: r.extra.lines,
+    evidence: resolveEvidence(r.extra.lines, r.path, r.start.line, r.end.line),
     remediation: r.extra.fix || `Review and fix the security issue at ${r.path}:${r.start.line}`,
     references: r.extra.metadata?.references,
   }));
