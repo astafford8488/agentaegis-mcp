@@ -14,8 +14,8 @@ export async function logUsage(input: {
   error_message?: string;
   request_ip?: string;
   user_agent?: string;
-}): Promise<void> {
-  await getDb().from("aegis_usage_log").insert({
+}): Promise<string | null> {
+  const { data } = await getDb().from("aegis_usage_log").insert({
     customer_id: input.customer_id || null,
     api_key_id: input.api_key_id || null,
     agent_id: input.agent_id || null,
@@ -28,7 +28,18 @@ export async function logUsage(input: {
     error_message: input.error_message || null,
     request_ip: input.request_ip || null,
     user_agent: input.user_agent || null,
-  });
+  }).select("id").single();
+  return (data as { id?: string } | null)?.id ?? null;
+}
+
+/** Correct an existing usage_log row's outcome. The x402 gate logs success=true at
+ *  settlement (before the tool runs); wrapTool calls this to flip it to a failure if
+ *  the tool then throws, so billing/analytics aren't inflated by paid-but-errored calls. */
+export async function updateUsageOutcome(id: string, success: boolean, errorMessage?: string): Promise<void> {
+  await getDb().from("aegis_usage_log").update({
+    success,
+    error_message: errorMessage ? errorMessage.slice(0, 500) : null,
+  }).eq("id", id);
 }
 
 export async function getCustomerUsage(

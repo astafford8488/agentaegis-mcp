@@ -236,6 +236,13 @@ export async function cdpSettle(
   paymentRequirements: CdpPaymentRequirements,
 ): Promise<CdpSettleResult> {
   try {
+    // Bazaar-indexing diagnostic: our listing isn't appearing. We attach discovery
+    // metadata to the 402 challenge's `extensions` and assumed the client copies it
+    // into the signed payment (forwarded to the facilitator on settle). Log (a) whether
+    // the incoming payment actually carries it, and (b) the full settle response (any
+    // extension/discovery acknowledgement). Remove once the path is confirmed.
+    const _pp = paymentPayload as { extensions?: unknown; payload?: { extensions?: unknown } };
+    console.log("[x402][bazaar-diag] payment.extensions:", JSON.stringify(_pp?.extensions ?? _pp?.payload?.extensions ?? null)?.slice(0, 600));
     const raw = (await getCdpClient().settle(
       paymentPayload as never,
       paymentRequirements as never,
@@ -246,6 +253,7 @@ export async function cdpSettle(
       errorReason?: string;
       errorMessage?: string;
     };
+    console.log("[x402][bazaar-diag] settle response:", JSON.stringify(raw)?.slice(0, 800));
     return {
       success: Boolean(raw.success),
       txHash: raw.transaction,

@@ -22,6 +22,10 @@ export interface RequestContext {
   /** Resolved Phase 9.0 agent identity. Lazily populated + memoized by
    *  getOrResolveAgent so a request resolves identity at most once. */
   agent?: Agent;
+  /** Row id of the x402 usage_log entry the gate inserts at settlement (logged
+   *  success=true there, before the tool runs). wrapTool updates it to success=false
+   *  if the tool then throws, so billing/analytics reflect the real outcome. */
+  x402UsageLogId?: string;
   ip?: string;
   userAgent?: string;
 }

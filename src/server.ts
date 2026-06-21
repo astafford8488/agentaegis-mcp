@@ -51,7 +51,7 @@ import { TOOL_PRICING } from "./types/mcp.js";
 import { getRequestContext } from "./auth/requestContext.js";
 import { chargeApiKey } from "./auth/apiKeyAuth.js";
 import { isDbConfigured } from "./db/client.js";
-import { logUsage } from "./db/usageLog.js";
+import { logUsage, updateUsageOutcome } from "./db/usageLog.js";
 
 // Phase 9.0 — agent identity + scan persistence
 import { getOrResolveAgent } from "./auth/agentIdentity.js";
@@ -130,8 +130,9 @@ function wrapTool(toolName: string, handler: (args: any) => Promise<any>, option
         result = await handler(args);
       } catch (err) {
         if (scanId) await failScan(scanId).catch(() => { /* best-effort */ });
-        // API-key path logs the failed call (no charge). x402 was already settled
-        // + logged at the gate, so don't double-log it here.
+        // API-key path logs the failed call (no charge). x402 was settled + logged
+        // success=true at the gate (before the handler ran) — correct that row to a
+        // failure now that the tool threw, so billing/analytics aren't inflated.
         if (isApiKeyPaid) {
           await logUsage({
             customer_id: ctx!.apiKey!.customer_id,
@@ -146,6 +147,8 @@ function wrapTool(toolName: string, handler: (args: any) => Promise<any>, option
             request_ip: ctx!.ip,
             user_agent: ctx!.userAgent,
           }).catch(() => { /* best-effort */ });
+        } else if (isX402Paid && ctx?.x402UsageLogId) {
+          await updateUsageOutcome(ctx.x402UsageLogId, false, String(err)).catch(() => { /* best-effort */ });
         }
         return asError({ error: String(err) });
       }

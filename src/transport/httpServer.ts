@@ -423,7 +423,9 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
               ? await resolveAgent({ walletAddress: verified.payerAddress }).catch(() => null)
               : null;
             (req as any).agent = x402Agent;
-            await logUsage({
+            // Capture the row id so wrapTool can flip success→false if the tool throws
+            // (settlement already happened; this only corrects the logged outcome).
+            (req as any).x402UsageLogId = await logUsage({
               agent_id: x402Agent?.id,
               tool_name: toolName!,
               target: undefined,
@@ -433,7 +435,7 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
               success: true,
               request_ip: req.ip,
               user_agent: req.headers["user-agent"],
-            }).catch(() => { /* best effort */ });
+            }).catch(() => null);
           }
         } else {
           // === Legacy v1 path (unchanged behavior — raw fetch to X402_FACILITATOR_URL) ===
@@ -485,7 +487,9 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
               ? await resolveAgent({ walletAddress: verified.payerAddress }).catch(() => null)
               : null;
             (req as any).agent = x402Agent;
-            await logUsage({
+            // Capture the row id so wrapTool can flip success→false if the tool throws
+            // (settlement already happened; this only corrects the logged outcome).
+            (req as any).x402UsageLogId = await logUsage({
               agent_id: x402Agent?.id,
               tool_name: toolName!,
               target: undefined,
@@ -495,7 +499,7 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
               success: true,
               request_ip: req.ip,
               user_agent: req.headers["user-agent"],
-            }).catch(() => { /* best effort */ });
+            }).catch(() => null);
           }
         }
       }
@@ -550,6 +554,7 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
           x402Settled,
           payerWallet: (req as any).payerWallet,
           agent: (req as any).agent,
+          x402UsageLogId: (req as any).x402UsageLogId,
           ip: req.ip,
           userAgent: req.headers["user-agent"],
         },
