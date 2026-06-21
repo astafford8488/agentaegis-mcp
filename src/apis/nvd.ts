@@ -155,6 +155,60 @@ async function lookupCVEViaOSV(cveId: string): Promise<CVEDetail | null> {
   };
 }
 
+// Full-coverage cloud-friendly fallback. CIRCL's vulnerability-lookup mirrors the CVE
+// Program (CVE 5.0 records) for ALL CVEs — including OS/proprietary ones OSV doesn't
+// carry (e.g. EternalBlue) — and exposes a numeric CVSS base score + CWE directly.
+async function lookupCVEViaCIRCL(cveId: string): Promise<CVEDetail | null> {
+  const resp = await fetch(`https://vulnerability.circl.lu/api/vulnerability/${encodeURIComponent(cveId)}`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!resp.ok) return null;
+  const v = (await resp.json()) as {
+    cveMetadata?: { cveId?: string; datePublished?: string; dateUpdated?: string };
+    containers?: {
+      cna?: {
+        descriptions?: { lang?: string; value?: string }[];
+        metrics?: Record<string, { baseScore?: number; vectorString?: string; baseSeverity?: string; exploitabilityScore?: number; impactScore?: number }>[];
+        problemTypes?: { descriptions?: { description?: string }[] }[];
+        references?: { url?: string; tags?: string[] }[];
+      };
+      adp?: { metrics?: Record<string, { baseScore?: number; vectorString?: string; baseSeverity?: string; exploitabilityScore?: number; impactScore?: number }>[] }[];
+    };
+  };
+  const cna = v?.containers?.cna;
+  if (!cna) return null;
+
+  const descriptions = cna.descriptions || [];
+  const description = (descriptions.find((d) => /^en/i.test(d.lang || ""))?.value || descriptions[0]?.value || "").slice(0, 1000);
+
+  const metricSets = [...(cna.metrics || [])];
+  for (const adp of v.containers?.adp || []) metricSets.push(...(adp.metrics || []));
+  let cvss: { baseScore?: number; vectorString?: string; baseSeverity?: string; exploitabilityScore?: number; impactScore?: number } | null = null;
+  for (const m of metricSets) {
+    const c = m.cvssV3_1 || m.cvssV3_0;
+    if (c?.baseScore != null) { cvss = c; break; }
+  }
+  const score = cvss?.baseScore ?? null;
+  const severity = score == null ? "" : score >= 9 ? "CRITICAL" : score >= 7 ? "HIGH" : score >= 4 ? "MEDIUM" : "LOW";
+
+  const cwe: string[] = [];
+  for (const pt of cna.problemTypes || []) for (const d of pt.descriptions || []) if (d.description) cwe.push(d.description);
+
+  return {
+    id: v.cveMetadata?.cveId || cveId,
+    description,
+    published: v.cveMetadata?.datePublished || "",
+    last_modified: v.cveMetadata?.dateUpdated || "",
+    cvss_v3: score != null
+      ? { score, vector: cvss?.vectorString || "", severity: cvss?.baseSeverity || severity, exploitability_score: cvss?.exploitabilityScore || 0, impact_score: cvss?.impactScore || 0 }
+      : null,
+    cwe,
+    affected_products: [],
+    references: (cna.references || []).filter((r) => r.url).map((r) => ({ url: r.url as string, source: "CIRCL", tags: r.tags || [] })),
+    is_in_kev: false,
+  };
+}
+
 export async function lookupCVE(cveId: string): Promise<CVEDetail | null> {
   const cached = cache.get(cveId);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -208,14 +262,17 @@ export async function lookupCVE(cveId: string): Promise<CVEDetail | null> {
     return detail;
   } catch (err) {
     // NVD failed (commonly a 503 — NVD throttles datacenter/cloud egress IPs even
-    // with an API key). Fall back to OSV so a paid cve_lookup still returns data
-    // instead of an error the caller already settled for.
-    const osv = await lookupCVEViaOSV(cveId).catch(() => null);
-    if (osv) {
-      cache.set(cveId, { data: osv, timestamp: Date.now() });
-      return osv;
+    // with an API key). Fall back to cloud-friendly mirrors so a paid cve_lookup
+    // still returns data instead of an error the caller already settled for:
+    // CIRCL first (full CVE coverage + numeric CVSS), then OSV (package CVEs).
+    for (const fallback of [lookupCVEViaCIRCL, lookupCVEViaOSV]) {
+      const r = await fallback(cveId).catch(() => null);
+      if (r) {
+        cache.set(cveId, { data: r, timestamp: Date.now() });
+        return r;
+      }
     }
-    throw new Error(`CVE lookup failed (NVD + OSV both unavailable): ${err}`);
+    throw new Error(`CVE lookup failed (NVD + CIRCL + OSV all unavailable): ${err}`);
   }
 }
 
