@@ -61,11 +61,17 @@ const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 // A paid cve_lookup that hits one used to fail the whole call even though the caller
 // already settled x402. Retry a few times with a short backoff so an upstream blip
 // doesn't burn a paid request. Non-5xx/429 responses (incl. 404) return immediately.
-async function fetchNvdWithRetry(url: string, headers: Record<string, string>, attempts = 3): Promise<Response> {
+async function fetchNvdWithRetry(url: string, headers: Record<string, string>, attempts = 2): Promise<Response> {
   let lastErr: unknown;
   for (let i = 0; i < attempts; i++) {
+    // Bound each attempt: NVD slow-503s datacenter IPs (~5-6s). Because OSV is a
+    // reliable fallback, aborting a slow NVD request has no correctness cost — we
+    // just use OSV — so fail fast instead of making a paid call wait.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
     try {
-      const response = await fetch(url, { headers });
+      const response = await fetch(url, { headers, signal: controller.signal });
+      clearTimeout(timer);
       if ((response.status >= 500 || response.status === 429) && i < attempts - 1) {
         lastErr = new Error(`NVD API error: ${response.status}`);
         await new Promise((r) => setTimeout(r, 600 * (i + 1)));
@@ -73,6 +79,7 @@ async function fetchNvdWithRetry(url: string, headers: Record<string, string>, a
       }
       return response;
     } catch (e) {
+      clearTimeout(timer);
       lastErr = e;
       if (i < attempts - 1) {
         await new Promise((r) => setTimeout(r, 600 * (i + 1)));
