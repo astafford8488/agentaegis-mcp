@@ -28,6 +28,7 @@ import { dependencyAudit, dependencyAuditSchema } from "../tools/codeSecurity/de
 import { TOOL_PRICING } from "../types/mcp.js";
 import { isCdpMode } from "../auth/x402Cdp.js";
 import { logUsage } from "../db/usageLog.js";
+import { resolveAgent } from "../db/agents.js";
 import { isDbConfigured } from "../db/client.js";
 
 interface HttpResource {
@@ -136,20 +137,56 @@ export function mountHttpResources(app: Express): void {
       if (!parsed.success) {
         return res.status(400).json({ error: "Invalid request body", tool: r.toolName });
       }
+
+      // Best-effort identity + payment ref from the x402 headers, so the HTTP rail
+      // logs the same agent_id + payment_ref as the /mcp rail — and so we can tell
+      // organic Bazaar traffic from our own test wallet in aegis_usage_log.
+      let agentId: string | undefined;
+      let paymentRef: string | undefined;
+      try {
+        const xp = (req.headers["x-payment"] || req.headers["payment-signature"]) as string | undefined;
+        if (xp && isDbConfigured()) {
+          const d = JSON.parse(Buffer.from(xp, "base64").toString("utf-8")) as {
+            payload?: { authorization?: { from?: string }; from?: string };
+            from?: string;
+          };
+          const payer = d?.payload?.authorization?.from || d?.payload?.from || d?.from;
+          if (payer) {
+            const agent = await resolveAgent({ walletAddress: payer.toLowerCase() }).catch(() => null);
+            agentId = agent?.id;
+          }
+        }
+        const xpr = res.getHeader("X-PAYMENT-RESPONSE");
+        if (typeof xpr === "string") {
+          paymentRef = (JSON.parse(Buffer.from(xpr, "base64").toString("utf-8")) as { transaction?: string })?.transaction;
+        }
+      } catch { /* best-effort identity — never block a paid call */ }
+
+      const data = parsed.data as Record<string, unknown>;
+      const target = (data.endpoint || data.cve_id || data.hostname || data.indicator || data.target || (data.source as { url?: string } | undefined)?.url) as string | undefined;
+      const price = TOOL_PRICING[r.toolName] ?? 1;
+      const logIt = (success: boolean, error?: string) => {
+        if (!isDbConfigured()) return;
+        logUsage({
+          tool_name: r.toolName,
+          paid_via: "x402",
+          price_usd: price,
+          agent_id: agentId,
+          payment_ref: paymentRef,
+          target,
+          success,
+          error_message: error,
+          request_ip: req.ip,
+          user_agent: req.headers["user-agent"],
+        }).catch(() => { /* best-effort */ });
+      };
+
       try {
         const result = await r.handler(parsed.data);
-        if (isDbConfigured()) {
-          logUsage({
-            tool_name: r.toolName,
-            paid_via: "x402",
-            price_usd: TOOL_PRICING[r.toolName] ?? 1,
-            success: true,
-            request_ip: req.ip,
-            user_agent: req.headers["user-agent"],
-          }).catch(() => { /* best-effort */ });
-        }
+        logIt(true);
         res.json(result);
       } catch (err) {
+        logIt(false, String(err).slice(0, 500));
         res.status(500).json({ error: String(err) });
       }
     });
