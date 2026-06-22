@@ -234,15 +234,25 @@ export async function cdpVerify(
 export async function cdpSettle(
   paymentPayload: unknown,
   paymentRequirements: CdpPaymentRequirements,
+  toolName?: string,
 ): Promise<CdpSettleResult> {
   try {
-    // Bazaar-indexing diagnostic: our listing isn't appearing. We attach discovery
-    // metadata to the 402 challenge's `extensions` and assumed the client copies it
-    // into the signed payment (forwarded to the facilitator on settle). Log (a) whether
-    // the incoming payment actually carries it, and (b) the full settle response (any
-    // extension/discovery acknowledgement). Remove once the path is confirmed.
-    const _pp = paymentPayload as { extensions?: unknown; payload?: { extensions?: unknown } };
-    console.log("[x402][bazaar-diag] payment.extensions:", JSON.stringify(_pp?.extensions ?? _pp?.payload?.extensions ?? null)?.slice(0, 600));
+    // x402 Bazaar indexing: the CDP facilitator catalogs a resource when a settled
+    // payment carries our discovery declaration in `paymentPayload.extensions`
+    // (extractDiscoveryInfo reads it there). We attach that declaration to the 402
+    // challenge, but most paying clients — including @x402/fetch — do NOT echo a
+    // challenge's extensions back into the signed payment, so the facilitator never
+    // saw it and we were never listed. Fix: inject the declaration SERVER-SIDE here,
+    // just before settle, so it reaches the facilitator regardless of the client. The
+    // signed ERC-3009 authorization doesn't cover `extensions`, so this can't affect
+    // settlement verification. (diag logs left in until a settlement confirms indexing.)
+    const pp = (paymentPayload && typeof paymentPayload === "object" ? paymentPayload : {}) as { extensions?: Record<string, unknown> };
+    console.log("[x402][bazaar-diag] client extensions:", JSON.stringify(pp.extensions ?? null)?.slice(0, 400));
+    if (toolName) {
+      const bazaar = buildBazaarExtension(toolName);
+      if (bazaar) pp.extensions = { ...(pp.extensions || {}), ...bazaar };
+    }
+    console.log("[x402][bazaar-diag] forwarding extensions:", JSON.stringify(pp.extensions ?? null)?.slice(0, 400));
     const raw = (await getCdpClient().settle(
       paymentPayload as never,
       paymentRequirements as never,

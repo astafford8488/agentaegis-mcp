@@ -7,11 +7,14 @@
  * `paymentPayload.extensions.bazaar` carries a valid discovery declaration.
  *
  * We don't use the SDK's resource-server middleware (we have a custom CDP gate),
- * so we wire discovery the lightweight way: put the declaration in the 402
- * challenge's `extensions` field. The v2 client copies a challenge's `extensions`
- * into the signed `paymentPayload.extensions`, which we then forward to the
- * facilitator on settle (see @x402/core extractDiscoveryInfo). Net effect: each
- * tool is indexed in the Bazaar the first time an agent pays for it.
+ * so we wire discovery ourselves: the declaration is BOTH attached to the 402
+ * challenge's `extensions` (for any client that echoes it) AND injected
+ * server-side into `paymentPayload.extensions` just before settle (cdpSettle) —
+ * because most clients, including @x402/fetch, do NOT echo challenge extensions
+ * back into the signed payment. The facilitator runs extractDiscoveryInfo over
+ * `paymentPayload.extensions` on settle to index the resource. Net effect: each
+ * tool is indexed in the Bazaar the first time an agent pays for it, regardless
+ * of client behavior.
  *
  * This is purely additive metadata — `buildBazaarExtension` is best-effort and
  * never throws, so a bad declaration can never break a payment challenge.
