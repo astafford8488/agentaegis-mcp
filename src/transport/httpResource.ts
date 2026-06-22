@@ -36,6 +36,11 @@ export function mountHttpResources(app: Express): void {
 
   const price = TOOL_PRICING["vet_endpoint"] ?? 3;
   const network = process.env.X402_NETWORK || "base";
+  // Force the public https URL. Behind Railway's edge, req.protocol is "http"
+  // (TLS terminated upstream), so x402-express would otherwise advertise + catalog
+  // an http:// resource. The client signs whatever the challenge says, so this must
+  // match on both sides — pin it explicitly to the https public URL.
+  const baseUrl = process.env.PUBLIC_BASE_URL || "https://agentaegis-mcp-production.up.railway.app";
 
   const routes: RoutesConfig = {
     [`POST ${VET_PATH}`]: {
@@ -47,6 +52,7 @@ export function mountHttpResources(app: Express): void {
         mimeType: "application/json",
         maxTimeoutSeconds: 60,
         discoverable: true,
+        resource: `${baseUrl}${VET_PATH}` as never,
         // Discovery metadata (best-effort shape; informs Bazaar consumers).
         inputSchema: { bodyType: "json", body: { endpoint: "example.com or https://api.example.com/pay" } } as never,
         outputSchema: {
