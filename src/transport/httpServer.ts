@@ -19,6 +19,7 @@ import {
   parseCheckoutCompleted,
 } from "../payments/stripe.js";
 import { buildAdminRouter } from "./adminRoutes.js";
+import { mountHttpResources } from "./httpResource.js";
 import { runWithContext } from "../auth/requestContext.js";
 import { runHealthCheck } from "./healthCheck.js";
 import { Sentry } from "../observability/sentry.js";
@@ -302,6 +303,11 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
 
   // === Admin routes ===
   app.use("/admin", buildAdminRouter());
+
+  // === HTTP x402 resource(s) — Bazaar discovery experiment (vet_endpoint) ===
+  // No-op unless payee + CDP mode are set. Uses x402-express middleware so the
+  // route is gated AND declared discoverable to the Bazaar (HTTP-only catalog).
+  mountHttpResources(app);
 
   // Scan job status (for async scans) — requires API-key auth + ownership check.
   app.get("/v1/jobs/:jobId", apiKeyAuth, async (req: AuthenticatedRequest, res: Response) => {
