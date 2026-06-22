@@ -400,7 +400,7 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
             });
           }
 
-          const settlement = await x402Cdp.cdpSettle(paymentPayload, cdpReqs, toolName!);
+          const settlement = await x402Cdp.cdpSettle(paymentPayload, cdpReqs);
           if (!settlement.success) {
             res.setHeader("PAYMENT-REQUIRED", x402Cdp.encodeCdpChallengeHeader(toolName!, fullResourceUrl));
             return res.status(402).json({

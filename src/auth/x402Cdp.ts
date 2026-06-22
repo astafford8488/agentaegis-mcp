@@ -234,25 +234,12 @@ export async function cdpVerify(
 export async function cdpSettle(
   paymentPayload: unknown,
   paymentRequirements: CdpPaymentRequirements,
-  toolName?: string,
 ): Promise<CdpSettleResult> {
+  // NOTE: we do NOT inject Bazaar discovery here. The CDP Bazaar catalogs HTTP
+  // resources only — MCP tool calls (this /mcp path) are not listable no matter
+  // what we send on settle (confirmed 2026-06-22). Bazaar presence is handled by a
+  // dedicated HTTP resource instead — see src/transport/httpResource.ts.
   try {
-    // x402 Bazaar indexing: the CDP facilitator catalogs a resource when a settled
-    // payment carries our discovery declaration in `paymentPayload.extensions`
-    // (extractDiscoveryInfo reads it there). We attach that declaration to the 402
-    // challenge, but most paying clients — including @x402/fetch — do NOT echo a
-    // challenge's extensions back into the signed payment, so the facilitator never
-    // saw it and we were never listed. Fix: inject the declaration SERVER-SIDE here,
-    // just before settle, so it reaches the facilitator regardless of the client. The
-    // signed ERC-3009 authorization doesn't cover `extensions`, so this can't affect
-    // settlement verification. (diag logs left in until a settlement confirms indexing.)
-    const pp = (paymentPayload && typeof paymentPayload === "object" ? paymentPayload : {}) as { extensions?: Record<string, unknown> };
-    console.log("[x402][bazaar-diag] client extensions:", JSON.stringify(pp.extensions ?? null)?.slice(0, 400));
-    if (toolName) {
-      const bazaar = buildBazaarExtension(toolName);
-      if (bazaar) pp.extensions = { ...(pp.extensions || {}), ...bazaar };
-    }
-    console.log("[x402][bazaar-diag] forwarding extensions:", JSON.stringify(pp.extensions ?? null)?.slice(0, 400));
     const raw = (await getCdpClient().settle(
       paymentPayload as never,
       paymentRequirements as never,
@@ -263,7 +250,6 @@ export async function cdpSettle(
       errorReason?: string;
       errorMessage?: string;
     };
-    console.log("[x402][bazaar-diag] settle response:", JSON.stringify(raw)?.slice(0, 800));
     return {
       success: Boolean(raw.success),
       txHash: raw.transaction,
