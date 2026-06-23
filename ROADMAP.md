@@ -238,9 +238,15 @@ agent-facing verdicts. Prioritized from the PIQ AA board:
   **Flagship.** Gates a payment → core of the 2nd patent. `src/tools/trustLayer/vetEndpoint.ts`,
   pure unit-tested scorer, $3. NEXT: add on-chain agent/wallet reputation as a 5th sub-score
   (ERC-8004 + GoPlus — PIQ task `ab894469`); breach-exposure sub-score once HIBP key is set.
-- **`scan_mcp_plugin` / `scan_skill`** (PIQ, due 2026-07-31) — supply-chain scanner for
-  agent tools: before an agent installs/trusts an MCP server or skill, scan it for
-  malicious patterns, exfiltration, prompt-injection sinks.
+- **`scan_mcp_plugin`** ✅ SHIPPED 2026-06-23 (live in prod `tools/list`, $5) — supply-chain
+  scanner for agent tools: before an agent installs/trusts an MCP server or skill, scan it
+  (git repo or code snippet) for exfiltration (secrets/env → network), prompt-injection sinks
+  (hijack phrases + hidden/zero-width unicode), dangerous capabilities (eval/shell/dynamic
+  exec), npm install lifecycle hooks, and obfuscation — composing Semgrep + secret-scan with
+  MCP-specific heuristics into a pure-scored (`scoreMcpPlugin`) PROCEED/CAUTION/BLOCK verdict.
+  Hard-blocks on the exfiltration combo / verified secret / decode-then-exec.
+  `src/tools/trustLayer/scanMcpPlugin.ts`, in the `/admin/dry-run` QA map. NEXT: list it as an
+  HTTP Bazaar resource; add a `scan_skill` variant.
 - **`kya_verify`** (PIQ, due 2026-08-15) — Know-Your-Agent attestation built on
   Mastercard's Verifiable Intent open spec; pairs with Visa TAP / Web Bot Auth.
 - **On-chain agent/wallet reputation scoring** (PIQ, due 2026-08-15) — the "AgentRadar"
