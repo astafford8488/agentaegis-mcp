@@ -187,6 +187,9 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
   // an agent (or human dashboard) makes to know "where do I stand?"
   app.get("/v1/customers/:customerId/balance", apiKeyAuth, async (req: AuthenticatedRequest, res: Response) => {
     if (!isDbConfigured()) return res.status(503).json({ error: "Database not configured" });
+    // Balance is money and changes on every paid call — never let a browser/proxy/CDN
+    // serve a cached (or 304) copy, so dashboards + agents polling always see current state.
+    res.set("Cache-Control", "no-store");
 
     const customerId = req.params.customerId as string;
     if (req.apiKey?.customer_id !== customerId) {
