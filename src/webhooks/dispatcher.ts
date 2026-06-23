@@ -2,12 +2,18 @@ import * as crypto from "crypto";
 import { getDb, isDbConfigured } from "../db/client.js";
 import type { Webhook } from "../db/types.js";
 
-export type WebhookEvent =
-  | "scan.completed"
-  | "scan.failed"
-  | "scan.timeout"
-  | "incident.triaged"
-  | "compliance.assessed";
+export const WEBHOOK_EVENTS = [
+  "scan.completed",
+  "scan.failed",
+  "scan.timeout",
+  "incident.triaged",
+  "compliance.assessed",
+] as const;
+export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
+
+export function isValidWebhookEvent(e: string): e is WebhookEvent {
+  return (WEBHOOK_EVENTS as readonly string[]).includes(e);
+}
 
 const MAX_ATTEMPTS = 5;
 const RETRY_BACKOFF_MS = [60_000, 300_000, 900_000, 3_600_000, 14_400_000];
@@ -35,6 +41,15 @@ export async function dispatchWebhook(
   for (const webhook of webhooks) {
     await deliverToWebhook(webhook as Webhook, eventType, payload);
   }
+}
+
+/** Send a single test event to ONE webhook — used by the management "test" endpoint
+ *  so a customer can verify their endpoint receives + validates the HMAC signature. */
+export async function sendTestEvent(webhook: Webhook): Promise<void> {
+  await deliverToWebhook(webhook, "scan.completed", {
+    test: true,
+    message: "AgentAegis test event — your webhook is configured correctly.",
+  });
 }
 
 async function deliverToWebhook(

@@ -10,6 +10,8 @@ import { TOOL_PRICING } from "../types/mcp.js";
 import { isDbConfigured, getDb } from "../db/client.js";
 import { createCustomer, findCustomerByEmail, addBalance } from "../db/customers.js";
 import { createApiKey } from "../db/apiKeys.js";
+import { createWebhook, listWebhooks, getWebhook, updateWebhook, deleteWebhook, validateWebhookUrl, validateEvents, publicWebhook, WEBHOOK_EVENTS } from "../db/webhooks.js";
+import { sendTestEvent } from "../webhooks/dispatcher.js";
 import { getCustomerUsage, logUsage } from "../db/usageLog.js";
 import { getJob } from "../db/scanJobs.js";
 import { resolveAgent } from "../db/agents.js";
@@ -180,6 +182,100 @@ export function buildHttpApp(buildServer: () => McpServer): Express {
     } catch (err) {
       res.status(500).json({ error: String(err) });
     }
+  });
+
+  // === Webhook management — customer-scoped CRUD (uses the customer's own API key) ===
+  // Delivery already works (src/webhooks/dispatcher.ts); these are the missing
+  // management endpoints so customers/agents can register + manage webhooks.
+  const requireOwner = (req: AuthenticatedRequest, res: Response, customerId: string): boolean => {
+    if (req.apiKey?.customer_id !== customerId) { res.status(403).json({ error: "Forbidden" }); return false; }
+    return true;
+  };
+
+  // Create → returns the signing secret ONCE.
+  app.post("/v1/customers/:customerId/webhooks", apiKeyAuth, async (req: AuthenticatedRequest, res: Response) => {
+    if (!isDbConfigured()) return res.status(503).json({ error: "Database not configured" });
+    const customerId = req.params.customerId as string;
+    if (!requireOwner(req, res, customerId)) return;
+    const u = validateWebhookUrl(req.body?.url);
+    if (!u.ok) return res.status(400).json({ error: u.reason });
+    const e = validateEvents(req.body?.events);
+    if (!e.ok) return res.status(400).json({ error: e.reason });
+    try {
+      const wh = await createWebhook({ customer_id: customerId, url: u.url, events_subscribed: e.events });
+      res.set("Cache-Control", "no-store");
+      res.status(201).json({
+        ...publicWebhook(wh),
+        secret: wh.secret,
+        warning: "Store this signing secret — it is shown only once. Verify each delivery with the X-AgentAegis-Signature (sha256 HMAC of the body) header.",
+      });
+    } catch (err) { res.status(500).json({ error: String(err) }); }
+  });
+
+  // List (secrets omitted) + the events you can subscribe to.
+  app.get("/v1/customers/:customerId/webhooks", apiKeyAuth, async (req: AuthenticatedRequest, res: Response) => {
+    if (!isDbConfigured()) return res.status(503).json({ error: "Database not configured" });
+    const customerId = req.params.customerId as string;
+    if (!requireOwner(req, res, customerId)) return;
+    res.set("Cache-Control", "no-store");
+    try {
+      res.json({ webhooks: (await listWebhooks(customerId)).map(publicWebhook), available_events: WEBHOOK_EVENTS });
+    } catch (err) { res.status(500).json({ error: String(err) }); }
+  });
+
+  // Get one (secret omitted).
+  app.get("/v1/customers/:customerId/webhooks/:webhookId", apiKeyAuth, async (req: AuthenticatedRequest, res: Response) => {
+    if (!isDbConfigured()) return res.status(503).json({ error: "Database not configured" });
+    const customerId = req.params.customerId as string;
+    if (!requireOwner(req, res, customerId)) return;
+    res.set("Cache-Control", "no-store");
+    try {
+      const wh = await getWebhook(customerId, req.params.webhookId as string);
+      if (!wh) return res.status(404).json({ error: "Webhook not found" });
+      res.json(publicWebhook(wh));
+    } catch (err) { res.status(500).json({ error: String(err) }); }
+  });
+
+  // Update (url / events / active).
+  app.patch("/v1/customers/:customerId/webhooks/:webhookId", apiKeyAuth, async (req: AuthenticatedRequest, res: Response) => {
+    if (!isDbConfigured()) return res.status(503).json({ error: "Database not configured" });
+    const customerId = req.params.customerId as string;
+    if (!requireOwner(req, res, customerId)) return;
+    const patch: { url?: string; events_subscribed?: string[]; active?: boolean } = {};
+    if (req.body?.url !== undefined) { const u = validateWebhookUrl(req.body.url); if (!u.ok) return res.status(400).json({ error: u.reason }); patch.url = u.url; }
+    if (req.body?.events !== undefined) { const e = validateEvents(req.body.events); if (!e.ok) return res.status(400).json({ error: e.reason }); patch.events_subscribed = e.events; }
+    if (req.body?.active !== undefined) { if (typeof req.body.active !== "boolean") return res.status(400).json({ error: "active must be a boolean" }); patch.active = req.body.active; }
+    try {
+      const wh = await updateWebhook(customerId, req.params.webhookId as string, patch);
+      if (!wh) return res.status(404).json({ error: "Webhook not found" });
+      res.set("Cache-Control", "no-store");
+      res.json(publicWebhook(wh));
+    } catch (err) { res.status(500).json({ error: String(err) }); }
+  });
+
+  // Delete.
+  app.delete("/v1/customers/:customerId/webhooks/:webhookId", apiKeyAuth, async (req: AuthenticatedRequest, res: Response) => {
+    if (!isDbConfigured()) return res.status(503).json({ error: "Database not configured" });
+    const customerId = req.params.customerId as string;
+    if (!requireOwner(req, res, customerId)) return;
+    try {
+      const ok = await deleteWebhook(customerId, req.params.webhookId as string);
+      if (!ok) return res.status(404).json({ error: "Webhook not found" });
+      res.status(204).end();
+    } catch (err) { res.status(500).json({ error: String(err) }); }
+  });
+
+  // Send a test event to THIS webhook (verify the endpoint + signature handling).
+  app.post("/v1/customers/:customerId/webhooks/:webhookId/test", apiKeyAuth, async (req: AuthenticatedRequest, res: Response) => {
+    if (!isDbConfigured()) return res.status(503).json({ error: "Database not configured" });
+    const customerId = req.params.customerId as string;
+    if (!requireOwner(req, res, customerId)) return;
+    try {
+      const wh = await getWebhook(customerId, req.params.webhookId as string);
+      if (!wh) return res.status(404).json({ error: "Webhook not found" });
+      await sendTestEvent(wh);
+      res.json({ ok: true, message: "Test event dispatched. Check your endpoint and the deliveries log." });
+    } catch (err) { res.status(500).json({ error: String(err) }); }
   });
 
   // Account snapshot — balance, monthly usage, key info.
