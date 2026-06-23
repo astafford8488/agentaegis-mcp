@@ -35,6 +35,7 @@ import { accessReview } from "../tools/identity/accessReview.js";
 import { mfaAudit } from "../tools/identity/mfaAudit.js";
 import { credentialCheck } from "../tools/offensive/credentialCheck.js";
 import { vetEndpoint } from "../tools/trustLayer/vetEndpoint.js";
+import { scanMcpPlugin } from "../tools/trustLayer/scanMcpPlugin.js";
 
 const DRY_RUN_TOOLS: Record<string, (args: any) => Promise<any>> = {
   compliance_framework_check: complianceFrameworkCheck,
@@ -58,6 +59,7 @@ const DRY_RUN_TOOLS: Record<string, (args: any) => Promise<any>> = {
   mfa_audit: mfaAudit,
   credential_check: credentialCheck,
   vet_endpoint: vetEndpoint,
+  scan_mcp_plugin: scanMcpPlugin,
 };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

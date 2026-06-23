@@ -40,6 +40,7 @@ export const TOOL_PRICING: Record<string, number> = {
   vuln_scan_web_app: 5.00,
   sast_scan: 5.00,
   audit_report_generate: 5.00,
+  scan_mcp_plugin: 5.00, // L2 trust — clone + Semgrep + secret scan + MCP heuristics
 
   // Free utility tools (always 0)
   account_balance: 0,

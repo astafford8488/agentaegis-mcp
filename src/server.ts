@@ -35,6 +35,7 @@ import { credentialCheck, credentialCheckSchema } from "./tools/offensive/creden
 
 // Trust Layer (L2) — composite agent-facing verdicts
 import { vetEndpoint, vetEndpointSchema } from "./tools/trustLayer/vetEndpoint.js";
+import { scanMcpPlugin, scanMcpPluginSchema } from "./tools/trustLayer/scanMcpPlugin.js";
 
 // Account tools (free for the agent — needed to manage budget)
 import { accountBalance, accountBalanceSchema } from "./tools/account/accountBalance.js";
@@ -251,6 +252,11 @@ export function buildMcpServer(options: ServerOptions = {}): McpServer {
   // an endpoint an agent is about to call or pay: TLS + DNS hygiene + threat
   // intel + domain age → one decision. Designed to gate a per-invocation payment.
   registerPaidTool(server, "vet_endpoint", "Composite trust verdict (PROCEED/CAUTION/BLOCK) for an endpoint an agent is about to call or pay — combines TLS/cert health, DNS hygiene, threat-intel reputation, and domain age into one decision with reasons.", vetEndpointSchema.shape, vetEndpoint, options);
+
+  // scan_mcp_plugin (L2) — supply-chain trust scan of an MCP server / skill BEFORE
+  // an agent installs it: exfiltration, prompt-injection sinks, dangerous
+  // capabilities, npm install hooks, obfuscation + Semgrep/secret scan → one verdict.
+  registerPaidTool(server, "scan_mcp_plugin", "Scan an MCP server or agent skill (git repo or code) for supply-chain risk BEFORE trusting it — exfiltration (secrets/env to the network), prompt-injection sinks, dangerous capabilities, npm install hooks, obfuscation, plus Semgrep + secret scanning → a PROCEED/CAUTION/BLOCK verdict with findings.", scanMcpPluginSchema.shape, scanMcpPlugin, options);
 
   // Account — free tool so agents can self-check budget before paid calls.
   // Bypasses payment gating entirely (skipPayment for this one regardless of options).
