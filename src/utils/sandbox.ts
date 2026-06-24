@@ -4,6 +4,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
 import { v4 as uuidv4 } from "uuid";
+import { validateGitUrl } from "./sanitize.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -68,6 +69,13 @@ export async function cloneRepo(
   url: string,
   targetDir: string
 ): Promise<{ success: boolean; error?: string }> {
+  // SSRF guard: every clone-based tool routes through here, so validating the
+  // URL once protects all of them (sast/secret/dependency/mcp-plugin/skill scans).
+  const urlCheck = await validateGitUrl(url);
+  if (!urlCheck.valid) {
+    return { success: false, error: `Blocked git URL: ${urlCheck.reason}` };
+  }
+
   const result = await execInSandbox("git", ["clone", "--depth=1", "--single-branch", url, targetDir], {
     timeout: 120_000,
   });

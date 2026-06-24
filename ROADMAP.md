@@ -309,7 +309,8 @@ All operational credentials documented in:
 - ~~**No webhook UI yet**~~ — ✅ RESOLVED 2026-06-23. Portal UI already shipped (`app/account/webhooks/` — create/update/delete/test + deliveries); the real gap was the MCP REST API. Added customer-scoped CRUD at `/v1/customers/:id/webhooks` (+ `/test`) in `src/db/webhooks.ts` + `httpServer.ts` (apiKeyAuth + ownership, https-only URL validation, secret shown once) so agents/API consumers can manage webhooks too. E2E-verified on prod (commit `d687e7e`).
 - **No multi-region** — single Railway region (US East). If we get an EU enterprise customer, this becomes a blocker.
 - ~~**Customer balance display gap**~~ — ✅ RESOLVED 2026-06-23 (commit `88d1b26`). Data was fresh; the bug was caching. Added `Cache-Control: no-store` to `/v1/customers/:id/balance` + `cache:"no-store"` on the admin dashboard fetch (already polls 60s) → dashboards/portal/agents always see live numbers.
-- **The 8 generated policies are JSON, not markdown** — `audit/policies/*.json` should get rendered into committable markdown for human reading.
+- ~~**The 8 generated policies are JSON, not markdown**~~ — ✅ RESOLVED 2026-06-24 (commit `26d5a86`). `audit/render-policies.mjs` renders `audit/policies/*.json` → committable `*.md` (8 files).
+- ~~**SSRF: clone-based scan tools didn't validate the git URL**~~ — ✅ RESOLVED 2026-06-24. `sast_scan` / `secret_scan` / `dependency_audit` / `scan_mcp_plugin` / `scan_skill` handed an agent-supplied URL straight to `git clone` (an agent could reach internal hosts or `169.254.169.254` cloud metadata — SSRF proxy). Fixed centrally in `cloneRepo` via `validateGitUrl`: https-only, no embedded creds, resolves the host and rejects private/reserved IPs (defeats DNS rebinding), IPv6-aware. Plus `code_snippet` / `skill_md` inputs capped at 2 MB. x402 payment-replay reviewed — already mitigated by the ERC-3009 on-chain nonce (a captured authorization settles only once).
 
 ---
 

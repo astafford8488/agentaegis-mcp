@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateTarget, validateUrl, redactSecret, isBlockedIP } from "../../src/utils/sanitize.js";
+import { validateTarget, validateUrl, redactSecret, isBlockedIP, validateGitUrl, isBlockedIPv6 } from "../../src/utils/sanitize.js";
 
 describe("validateTarget", () => {
   it("accepts public IPs", () => {
@@ -97,5 +97,55 @@ describe("isBlockedIP", () => {
   it("allows public IPs", () => {
     expect(isBlockedIP("8.8.8.8")).toBe(false);
     expect(isBlockedIP("1.1.1.1")).toBe(false);
+  });
+});
+
+describe("validateGitUrl — SSRF guard for git clone", () => {
+  it("rejects non-https schemes", async () => {
+    expect((await validateGitUrl("http://github.com/o/r")).valid).toBe(false);
+    expect((await validateGitUrl("git://github.com/o/r")).valid).toBe(false);
+    expect((await validateGitUrl("ssh://git@github.com/o/r")).valid).toBe(false);
+    expect((await validateGitUrl("file:///etc/passwd")).valid).toBe(false);
+  });
+
+  it("rejects credentials embedded in the URL", async () => {
+    expect((await validateGitUrl("https://user:pass@github.com/o/r")).valid).toBe(false);
+  });
+
+  it("rejects private / reserved / loopback literal IPs (incl. cloud metadata)", async () => {
+    for (const u of [
+      "https://127.0.0.1/r",
+      "https://10.0.0.5/r",
+      "https://192.168.1.10/r",
+      "https://172.16.0.1/r",
+      "https://169.254.169.254/latest/meta-data/",
+    ]) {
+      const r = await validateGitUrl(u);
+      expect(r.valid, u).toBe(false);
+    }
+  });
+
+  it("rejects localhost / internal domains and unparseable input", async () => {
+    expect((await validateGitUrl("https://localhost/r")).valid).toBe(false);
+    expect((await validateGitUrl("https://db.internal/r")).valid).toBe(false);
+    expect((await validateGitUrl("not a url")).valid).toBe(false);
+  });
+
+  it("allows a public https git URL (literal public IP — resolves offline)", async () => {
+    expect((await validateGitUrl("https://8.8.8.8/owner/repo")).valid).toBe(true);
+  });
+});
+
+describe("isBlockedIPv6", () => {
+  it("blocks loopback, ULA, link-local, and v4-mapped private", () => {
+    expect(isBlockedIPv6("::1")).toBe(true);
+    expect(isBlockedIPv6("fc00::1")).toBe(true);
+    expect(isBlockedIPv6("fd12::1")).toBe(true);
+    expect(isBlockedIPv6("fe80::1")).toBe(true);
+    expect(isBlockedIPv6("::ffff:10.0.0.1")).toBe(true);
+  });
+
+  it("allows public IPv6", () => {
+    expect(isBlockedIPv6("2606:4700:4700::1111")).toBe(false);
   });
 });

@@ -69,6 +69,7 @@ const SCAN_EXTS = new Set([".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs", ".py", 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", "coverage", ".next", "vendor", "__pycache__", ".venv"]);
 const MAX_FILE_BYTES = 256 * 1024;
 const MAX_FILES = 600;
+const MAX_INPUT_BYTES = 2 * 1024 * 1024; // cap a single inline code_snippet input
 
 // Exported for unit testing (the detection layer is pure — no I/O).
 export function scanText(text: string, relFile: string): HeuristicFinding[] {
@@ -227,6 +228,9 @@ export async function scanMcpPlugin(input: ScanMcpPluginInput) {
       scanRoot = repoDir;
     } else {
       if (!source.code) return { error: "Code content required for code_snippet type", scan_id: scanId };
+      if (Buffer.byteLength(source.code, "utf8") > MAX_INPUT_BYTES) {
+        return { error: `code_snippet exceeds the ${MAX_INPUT_BYTES / (1024 * 1024)}MB limit`, scan_id: scanId };
+      }
       logScanTarget("scan_mcp_plugin", "code_snippet");
       const ext = ({ python: ".py", typescript: ".ts", javascript: ".js" } as Record<string, string>)[source.language?.toLowerCase() || ""] || ".js";
       await fs.writeFile(path.join(tempDir, `server${ext}`), source.code, "utf-8");

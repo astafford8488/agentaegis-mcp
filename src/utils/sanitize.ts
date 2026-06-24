@@ -1,5 +1,6 @@
 import { z } from "zod";
 import * as net from "net";
+import { lookup as dnsLookup } from "dns/promises";
 
 const BLOCKED_IP_RANGES = [
   "127.0.0.0/8",
@@ -90,6 +91,65 @@ export function validateUrl(url: string): { valid: boolean; reason?: string } {
   } catch {
     return { valid: false, reason: "Invalid URL format" };
   }
+}
+
+/** Private / reserved IPv6 ranges (loopback, ULA fc00::/7, link-local fe80::/10,
+ *  and v4-mapped addresses that fall in a blocked v4 range). */
+export function isBlockedIPv6(ip: string): boolean {
+  const low = ip.toLowerCase();
+  if (low === "::1" || low === "::") return true;
+  if (/^f[cd]/.test(low)) return true; // fc00::/7 unique-local
+  if (/^fe[89ab]/.test(low)) return true; // fe80::/10 link-local
+  const mapped = low.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  if (mapped && isBlockedIP(mapped[1])) return true;
+  return false;
+}
+
+/**
+ * SSRF-safe validation for a git clone URL. The clone-based tools (sast_scan,
+ * secret_scan, dependency_audit, scan_mcp_plugin, scan_skill) accept an
+ * agent-supplied URL and hand it to `git clone`, so without this an agent could
+ * point the server at internal services or the cloud metadata endpoint
+ * (169.254.169.254) and use the paid scanner as an SSRF proxy.
+ *
+ * Enforces: https only (no git://, ssh, http, file); no embedded credentials;
+ * a public hostname; and — crucially — that the host RESOLVES to a public IP
+ * (defeats a public domain that points at a private/reserved address, i.e. DNS
+ * rebinding). Residual TOCTOU (git re-resolves) is accepted: the repo is cloned
+ * read-only into a throwaway sandbox dir with --depth=1, no code is executed.
+ */
+export async function validateGitUrl(url: string): Promise<{ valid: boolean; reason?: string }> {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return { valid: false, reason: "Invalid URL format" };
+  }
+  if (parsed.protocol !== "https:") {
+    return { valid: false, reason: "Only https:// git URLs are allowed (no git://, ssh, http, or file)" };
+  }
+  if (parsed.username || parsed.password) {
+    return { valid: false, reason: "Credentials embedded in the URL are not allowed" };
+  }
+  const host = parsed.hostname.replace(/^\[|\]$/g, ""); // strip any IPv6 brackets
+  const basic = validateTarget(host);
+  if (!basic.valid) return basic;
+
+  let addrs: { address: string; family: number }[];
+  try {
+    addrs = await dnsLookup(host, { all: true });
+  } catch {
+    return { valid: false, reason: "Host did not resolve" };
+  }
+  for (const a of addrs) {
+    if (a.family === 4 && isBlockedIP(a.address)) {
+      return { valid: false, reason: `Host resolves to a private/reserved IP (${a.address})` };
+    }
+    if (a.family === 6 && isBlockedIPv6(a.address)) {
+      return { valid: false, reason: `Host resolves to a private/reserved IPv6 (${a.address})` };
+    }
+  }
+  return { valid: true };
 }
 
 export function sanitizeShellArg(arg: string): string {

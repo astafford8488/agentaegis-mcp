@@ -136,6 +136,7 @@ export function scoreSkill(s: {
 }
 
 const SKIP_DIRS = ["node_modules", ".git", "dist", "build", "vendor", "__pycache__", ".venv"];
+const MAX_INPUT_BYTES = 2 * 1024 * 1024; // cap a single inline skill_md input
 
 async function findSkillMdFiles(root: string): Promise<string[]> {
   const out: string[] = [];
@@ -175,6 +176,9 @@ export async function scanSkill(input: ScanSkillInput) {
       scanRoot = repoDir;
     } else {
       if (!source.skill_md) return { error: "skill_md content required for skill_md type", scan_id: scanId };
+      if (Buffer.byteLength(source.skill_md, "utf8") > MAX_INPUT_BYTES) {
+        return { error: `skill_md exceeds the ${MAX_INPUT_BYTES / (1024 * 1024)}MB limit`, scan_id: scanId };
+      }
       logScanTarget("scan_skill", "skill_md");
       await fs.writeFile(path.join(tempDir, "SKILL.md"), source.skill_md, "utf-8");
     }
