@@ -70,7 +70,8 @@ const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", "coverage", 
 const MAX_FILE_BYTES = 256 * 1024;
 const MAX_FILES = 600;
 
-function scanText(text: string, relFile: string): HeuristicFinding[] {
+// Exported for unit testing (the detection layer is pure — no I/O).
+export function scanText(text: string, relFile: string): HeuristicFinding[] {
   const findings: HeuristicFinding[] = [];
   const lines = text.split(/\r?\n/);
   let hasNetwork = false;
@@ -102,7 +103,8 @@ function scanText(text: string, relFile: string): HeuristicFinding[] {
   return findings;
 }
 
-function scanPackageJson(text: string, relFile: string): HeuristicFinding[] {
+// Exported for unit testing — install-hook detection on a package.json string.
+export function scanPackageJson(text: string, relFile: string): HeuristicFinding[] {
   const findings: HeuristicFinding[] = [];
   try {
     const pkg = JSON.parse(text) as { scripts?: Record<string, string> };
@@ -169,28 +171,37 @@ export function scoreMcpPlugin(s: {
   if (obfExec.length) { hardBlock = true; reasons.push(`Obfuscated decode-then-execute (e.g. eval(atob(...))) in ${obfExec.length} place(s).`); }
 
   const inj = by("prompt_injection");
-  const danger = by("dangerous_capability", "high");
+  const dangerHigh = by("dangerous_capability", "high");
+  const dangerMed = by("dangerous_capability", "medium");
   const hooks = by("install_hook");
   const obfOther = s.heuristics.filter((h) => h.category === "obfuscation" && h.severity !== "high");
 
-  score -= s.sastCritical * 20 + s.sastHigh * 8;
-  score -= inj.length * 15;
-  score -= danger.length * 8;
-  score -= hooks.length * 6;
-  score -= obfOther.length * 6;
-  score -= s.unverifiedSecrets * 5;
+  // Weighted deductions, tuned against the test corpus. A single signal that is
+  // rarely-legit inside an MCP tool (injection sink, install hook, embedded
+  // secret, eval/Function) lands in CAUTION ("look before you trust"); an
+  // ambiguous-but-sometimes-legit signal (a lone shell-out, one minified file)
+  // stays PROCEED-with-a-note. Combos and the hard-block shapes escalate to BLOCK.
+  score -= s.sastCritical * 25 + s.sastHigh * 12;
+  score -= inj.length * 25;
+  score -= dangerHigh.length * 22; // eval / Function / vm
+  score -= dangerMed.length * 12;  // shell / child_process / spawn — was unscored before
+  score -= hooks.length * 25;
+  score -= obfOther.length * 12;
+  score -= s.unverifiedSecrets * 25;
 
   if (s.sastCritical || s.sastHigh) reasons.push(`Static analysis flagged ${s.sastCritical} critical + ${s.sastHigh} high code issue(s).`);
   if (inj.length) reasons.push(`${inj.length} prompt-injection sink(s) (phrases/hidden unicode that could hijack the agent).`);
-  if (danger.length) reasons.push(`${danger.length} dangerous capability use(s) (eval / shell / dynamic exec).`);
+  if (dangerHigh.length) reasons.push(`${dangerHigh.length} dynamic-execution use(s) (eval / Function / vm).`);
+  if (dangerMed.length) reasons.push(`${dangerMed.length} shell/process-execution use(s).`);
   if (hooks.length) reasons.push(`${hooks.length} npm install lifecycle hook(s) — code runs on install.`);
+  if (obfOther.length) reasons.push(`${obfOther.length} obfuscation signal(s) (packed/minified or long encoded blob).`);
   if (s.unverifiedSecrets) reasons.push(`${s.unverifiedSecrets} possible embedded secret(s) (unverified).`);
   if (!reasons.length) reasons.push("No exfiltration, injection, dangerous-capability, or secret signals found.");
 
   score = Math.max(0, Math.min(100, Math.round(score)));
   let verdict: McpVerdict;
-  if (hardBlock || score < 40) verdict = "BLOCK";
-  else if (score < 75) verdict = "CAUTION";
+  if (hardBlock || score < 50) verdict = "BLOCK";
+  else if (score < 80) verdict = "CAUTION";
   else verdict = "PROCEED";
   return { trust_score: score, verdict, reasons };
 }
