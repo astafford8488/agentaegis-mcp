@@ -25,6 +25,7 @@ import { cveLookup, cveLookupSchema } from "../tools/vulnManagement/cveLookup.js
 import { sslTlsAudit, sslTlsAuditSchema } from "../tools/vulnManagement/sslTlsAudit.js";
 import { threatIntelLookup, threatIntelLookupSchema } from "../tools/blueTeam/threatIntelLookup.js";
 import { dependencyAudit, dependencyAuditSchema } from "../tools/codeSecurity/dependencyAudit.js";
+import { scanMcpPlugin, scanMcpPluginSchema } from "../tools/trustLayer/scanMcpPlugin.js";
 import { TOOL_PRICING } from "../types/mcp.js";
 import { isCdpMode } from "../auth/x402Cdp.js";
 import { logUsage } from "../db/usageLog.js";
@@ -91,6 +92,16 @@ const RESOURCES: HttpResource[] = [
       "AgentAegis dependency_audit — scan a git repository or a dependency manifest (npm/pip/go/ruby/java/cargo) for known-CVE packages, with severities and upgrade fixes (Trivy).",
     inputBody: { source: { type: "git_repo", url: "https://github.com/owner/repo" } },
     outputExample: { summary: { total_vulnerabilities: 12, critical: 2, high: 5 } },
+  },
+  {
+    path: "/x402/scan-mcp-plugin",
+    toolName: "scan_mcp_plugin",
+    schema: scanMcpPluginSchema,
+    handler: scanMcpPlugin as (i: unknown) => Promise<unknown>,
+    description:
+      "AgentAegis scan_mcp_plugin — supply-chain trust scan of an MCP server or agent skill BEFORE you install/trust it. Clones a git repo (or takes a code snippet) and flags exfiltration (secrets/env to the network), prompt-injection sinks (hijack phrases + hidden unicode), dangerous capabilities (eval/shell/dynamic exec), npm install hooks, and obfuscation → one PROCEED/CAUTION/BLOCK verdict with findings.",
+    inputBody: { source: { type: "git_repo", url: "https://github.com/owner/mcp-server" } },
+    outputExample: { verdict: "BLOCK", trust_score: 35, summary: { exfiltration: 1, prompt_injection: 2, dangerous_capabilities: 1 }, reasons: ["Exfiltration pattern: reads secrets/env and sends to the network."] },
   },
 ];
 
