@@ -250,7 +250,15 @@ agent-facing verdicts. Prioritized from the PIQ AA board:
   + 3 integration) — the corpus drove a scorer retune (medium dangerous-capabilities were unscored;
   single clear-risk signals now CAUTION). **HTTP Bazaar resource LIVE** at `/x402/scan-mcp-plugin`
   ($5, 402 verified, payTo=Ledger, discoverable) — catalogs on one settled bootstrap payment
-  (`audit/x402-test/05-bootstrap-scan-mcp-plugin.ts`). NEXT: run the bootstrap; add a `scan_skill` variant.
+  (`audit/x402-test/05-bootstrap-scan-mcp-plugin.ts`) — ✅ bootstrap settled + cataloged in the Bazaar 2026-06-24.
+- **`scan_skill`** ✅ SHIPPED 2026-06-24 (live in prod `tools/list`, $5) — the same trust-layer scanner
+  scoped to an agent SKILL (git repo or a `SKILL.md` string). Reuses the `scan_mcp_plugin` core verbatim
+  (`walkAndScan` + Semgrep + secret scan + the code heuristics on bundled scripts) and adds skill-specific
+  checks: (1) `SKILL.md` is INSTRUCTIONS the agent executes, so prompt-injection / hidden-unicode in it is
+  **hard-BLOCK**; (2) the frontmatter `allowed-tools` grant is parsed and over-broad/dangerous grants
+  (Bash/Write/Edit/`*`) are flagged + scored down. `src/tools/trustLayer/scanSkill.ts`, in `/admin/dry-run`.
+  **20-test vitest suite** (`tests/scanSkill.test.ts`). **HTTP Bazaar resource LIVE** at `/x402/scan-skill`
+  ($5, 402 verified) — catalogs on `audit/x402-test/06-bootstrap-scan-skill.ts` (pending one bootstrap settlement).
 - **`kya_verify`** (PIQ, due 2026-08-15) — Know-Your-Agent attestation built on
   Mastercard's Verifiable Intent open spec; pairs with Visa TAP / Web Bot Auth.
 - **On-chain agent/wallet reputation scoring** (PIQ, due 2026-08-15) — the "AgentRadar"
