@@ -118,7 +118,8 @@ export function scanPackageJson(text: string, relFile: string): HeuristicFinding
   return findings;
 }
 
-async function walkAndScan(dir: string): Promise<{ findings: HeuristicFinding[]; filesScanned: number }> {
+// Exported so scan_skill can reuse the same directory walk + detection.
+export async function walkAndScan(dir: string): Promise<{ findings: HeuristicFinding[]; filesScanned: number }> {
   const findings: HeuristicFinding[] = [];
   let filesScanned = 0;
   const stack = [dir];

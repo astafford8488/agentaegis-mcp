@@ -36,6 +36,7 @@ import { credentialCheck, credentialCheckSchema } from "./tools/offensive/creden
 // Trust Layer (L2) — composite agent-facing verdicts
 import { vetEndpoint, vetEndpointSchema } from "./tools/trustLayer/vetEndpoint.js";
 import { scanMcpPlugin, scanMcpPluginSchema } from "./tools/trustLayer/scanMcpPlugin.js";
+import { scanSkill, scanSkillSchema } from "./tools/trustLayer/scanSkill.js";
 
 // Account tools (free for the agent — needed to manage budget)
 import { accountBalance, accountBalanceSchema } from "./tools/account/accountBalance.js";
@@ -253,10 +254,15 @@ export function buildMcpServer(options: ServerOptions = {}): McpServer {
   // intel + domain age → one decision. Designed to gate a per-invocation payment.
   registerPaidTool(server, "vet_endpoint", "Composite trust verdict (PROCEED/CAUTION/BLOCK) for an endpoint an agent is about to call or pay — combines TLS/cert health, DNS hygiene, threat-intel reputation, and domain age into one decision with reasons.", vetEndpointSchema.shape, vetEndpoint, options);
 
-  // scan_mcp_plugin (L2) — supply-chain trust scan of an MCP server / skill BEFORE
-  // an agent installs it: exfiltration, prompt-injection sinks, dangerous
+  // scan_mcp_plugin (L2) — supply-chain trust scan of an MCP server BEFORE an
+  // agent installs it: exfiltration, prompt-injection sinks, dangerous
   // capabilities, npm install hooks, obfuscation + Semgrep/secret scan → one verdict.
-  registerPaidTool(server, "scan_mcp_plugin", "Scan an MCP server or agent skill (git repo or code) for supply-chain risk BEFORE trusting it — exfiltration (secrets/env to the network), prompt-injection sinks, dangerous capabilities, npm install hooks, obfuscation, plus Semgrep + secret scanning → a PROCEED/CAUTION/BLOCK verdict with findings.", scanMcpPluginSchema.shape, scanMcpPlugin, options);
+  registerPaidTool(server, "scan_mcp_plugin", "Scan an MCP server (git repo or code) for supply-chain risk BEFORE trusting it — exfiltration (secrets/env to the network), prompt-injection sinks, dangerous capabilities, npm install hooks, obfuscation, plus Semgrep + secret scanning → a PROCEED/CAUTION/BLOCK verdict with findings.", scanMcpPluginSchema.shape, scanMcpPlugin, options);
+
+  // scan_skill (L2) — same core as scan_mcp_plugin, scoped to an agent SKILL.
+  // SKILL.md is INSTRUCTIONS the agent executes, so injection in it is hard-block;
+  // the frontmatter allowed-tools grant is also inspected.
+  registerPaidTool(server, "scan_skill", "Scan an agent SKILL (git repo or SKILL.md) for supply-chain risk BEFORE trusting it — prompt-injection / hidden-unicode in the instructions (hard block), over-broad allowed-tools grants, plus exfiltration, dangerous capabilities, secrets and obfuscation in bundled scripts → a PROCEED/CAUTION/BLOCK verdict.", scanSkillSchema.shape, scanSkill, options);
 
   // Account — free tool so agents can self-check budget before paid calls.
   // Bypasses payment gating entirely (skipPayment for this one regardless of options).

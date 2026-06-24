@@ -41,6 +41,7 @@ export const TOOL_PRICING: Record<string, number> = {
   sast_scan: 5.00,
   audit_report_generate: 5.00,
   scan_mcp_plugin: 5.00, // L2 trust — clone + Semgrep + secret scan + MCP heuristics
+  scan_skill: 5.00, // L2 trust — same core, scoped to agent skills (SKILL.md + scripts)
 
   // Free utility tools (always 0)
   account_balance: 0,

@@ -36,6 +36,7 @@ import { mfaAudit } from "../tools/identity/mfaAudit.js";
 import { credentialCheck } from "../tools/offensive/credentialCheck.js";
 import { vetEndpoint } from "../tools/trustLayer/vetEndpoint.js";
 import { scanMcpPlugin } from "../tools/trustLayer/scanMcpPlugin.js";
+import { scanSkill } from "../tools/trustLayer/scanSkill.js";
 
 const DRY_RUN_TOOLS: Record<string, (args: any) => Promise<any>> = {
   compliance_framework_check: complianceFrameworkCheck,
@@ -60,6 +61,7 @@ const DRY_RUN_TOOLS: Record<string, (args: any) => Promise<any>> = {
   credential_check: credentialCheck,
   vet_endpoint: vetEndpoint,
   scan_mcp_plugin: scanMcpPlugin,
+  scan_skill: scanSkill,
 };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

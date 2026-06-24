@@ -26,6 +26,7 @@ import { sslTlsAudit, sslTlsAuditSchema } from "../tools/vulnManagement/sslTlsAu
 import { threatIntelLookup, threatIntelLookupSchema } from "../tools/blueTeam/threatIntelLookup.js";
 import { dependencyAudit, dependencyAuditSchema } from "../tools/codeSecurity/dependencyAudit.js";
 import { scanMcpPlugin, scanMcpPluginSchema } from "../tools/trustLayer/scanMcpPlugin.js";
+import { scanSkill, scanSkillSchema } from "../tools/trustLayer/scanSkill.js";
 import { TOOL_PRICING } from "../types/mcp.js";
 import { isCdpMode } from "../auth/x402Cdp.js";
 import { logUsage } from "../db/usageLog.js";
@@ -102,6 +103,16 @@ const RESOURCES: HttpResource[] = [
       "AgentAegis scan_mcp_plugin — supply-chain trust scan of an MCP server or agent skill BEFORE you install/trust it. Clones a git repo (or takes a code snippet) and flags exfiltration (secrets/env to the network), prompt-injection sinks (hijack phrases + hidden unicode), dangerous capabilities (eval/shell/dynamic exec), npm install hooks, and obfuscation → one PROCEED/CAUTION/BLOCK verdict with findings.",
     inputBody: { source: { type: "git_repo", url: "https://github.com/owner/mcp-server" } },
     outputExample: { verdict: "BLOCK", trust_score: 35, summary: { exfiltration: 1, prompt_injection: 2, dangerous_capabilities: 1 }, reasons: ["Exfiltration pattern: reads secrets/env and sends to the network."] },
+  },
+  {
+    path: "/x402/scan-skill",
+    toolName: "scan_skill",
+    schema: scanSkillSchema,
+    handler: scanSkill as (i: unknown) => Promise<unknown>,
+    description:
+      "AgentAegis scan_skill — supply-chain trust scan of an AGENT SKILL (a SKILL.md + bundled scripts) BEFORE you install/trust it. Flags prompt-injection / hidden-unicode in the instructions the agent will follow (hard block), over-broad allowed-tools grants, plus exfiltration, dangerous capabilities, secrets and obfuscation in bundled code → one PROCEED/CAUTION/BLOCK verdict.",
+    inputBody: { source: { type: "git_repo", url: "https://github.com/owner/skill-repo" } },
+    outputExample: { verdict: "BLOCK", trust_score: 0, summary: { instruction_injection: true, overbroad_tools: ["Bash"] }, reasons: ["SKILL.md instructions contain prompt-injection directives."] },
   },
 ];
 
