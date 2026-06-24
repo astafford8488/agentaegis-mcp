@@ -245,8 +245,12 @@ agent-facing verdicts. Prioritized from the PIQ AA board:
   exec), npm install lifecycle hooks, and obfuscation — composing Semgrep + secret-scan with
   MCP-specific heuristics into a pure-scored (`scoreMcpPlugin`) PROCEED/CAUTION/BLOCK verdict.
   Hard-blocks on the exfiltration combo / verified secret / decode-then-exec.
-  `src/tools/trustLayer/scanMcpPlugin.ts`, in the `/admin/dry-run` QA map. NEXT: list it as an
-  HTTP Bazaar resource; add a `scan_skill` variant.
+  `src/tools/trustLayer/scanMcpPlugin.ts`, in the `/admin/dry-run` QA map. **24-test vitest suite**
+  (`tests/scanMcpPlugin.test.ts`: 6 positive + 6 negative behavioral cases + 9 scorer-policy units
+  + 3 integration) — the corpus drove a scorer retune (medium dangerous-capabilities were unscored;
+  single clear-risk signals now CAUTION). **HTTP Bazaar resource LIVE** at `/x402/scan-mcp-plugin`
+  ($5, 402 verified, payTo=Ledger, discoverable) — catalogs on one settled bootstrap payment
+  (`audit/x402-test/05-bootstrap-scan-mcp-plugin.ts`). NEXT: run the bootstrap; add a `scan_skill` variant.
 - **`kya_verify`** (PIQ, due 2026-08-15) — Know-Your-Agent attestation built on
   Mastercard's Verifiable Intent open spec; pairs with Visa TAP / Web Bot Auth.
 - **On-chain agent/wallet reputation scoring** (PIQ, due 2026-08-15) — the "AgentRadar"
