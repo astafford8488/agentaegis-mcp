@@ -33,20 +33,33 @@ This document is the **canonical submission text and metadata** that we submit v
 ```
 This PR adds AgentAegis to the third-party servers list under [section].
 
-AgentAegis is a hosted MCP server exposing 20 cybersecurity tools (vuln
-scans, compliance checks, threat intel, code security, identity audits)
-with per-call billing — pre-funded API keys (Stripe-backed) or per-call
-USDC micropayments via the x402 protocol on Base mainnet.
+AgentAegis is a hosted MCP server that acts as a security & trust layer
+for AI agents. Its flagship tools target the agent ecosystem's own
+supply-chain risk:
+  - scan_mcp_plugin — scan an MCP server (git repo or code) for
+    exfiltration, prompt-injection sinks, dangerous capabilities, install
+    hooks and obfuscation BEFORE an agent installs/trusts it
+  - scan_skill — the same trust scan for an agent skill (SKILL.md + scripts)
+  - vet_endpoint — a PROCEED/CAUTION/BLOCK safety verdict for an endpoint
+    an agent is about to call or pay (TLS, DNS, threat-intel, domain age)
+
+Plus 25 more cybersecurity tools: vulnerability scans, threat intel
+(NVD/AbuseIPDB/OTX/abuse.ch), compliance (SOC 2, ISO 27001, HIPAA, PCI DSS),
+code security (SAST, secret scanning, dependency audit), and identity
+(access review, MFA audit) — 28 tools total.
+
+Billing is per-call on two rails: pre-funded API keys (Stripe-backed) or
+per-call USDC micropayments via the x402 protocol on Base mainnet. A free
+tier covers tools/list, help, and account_balance, so agents can discover
+capabilities without payment. Paid tools are $1–$5/call.
 
 The server is publicly reachable at:
   https://agentaegis-mcp-production.up.railway.app/mcp
 
-A free tier covers tools/list, help, and account_balance — agents can
-discover capabilities without payment. Paid tools are $1–$5/call.
-
 Production status:
 - Live on Base mainnet with real x402 settlements (verifiable on-chain)
-- Listed in the official MCP registry (io.github.astafford8488/agentaegis)
+- Already listed in the official MCP registry (io.github.astafford8488/agentaegis)
+- 6 tools also listed in the Coinbase x402 Bazaar
 - Status page: https://status.agentaegis.org
 - Public FAQ: https://agentaegis-mcp-production.up.railway.app/faq
 
@@ -62,7 +75,7 @@ guidance.
 ### README entry (copy/paste into README.md)
 
 ```markdown
-- **[AgentAegis](https://www.agentaegis.org)** — 20 cybersecurity tools (vuln scans, compliance, threat intel, code security, identity audits) with per-call billing via API keys or x402 USDC micropayments. Free tier for discovery; paid tools $1–$5/call. Hosted.
+- **[AgentAegis](https://www.agentaegis.org)** — security & trust layer for AI agents: scan an MCP server or skill *before* you install it (`scan_mcp_plugin`, `scan_skill`) and vet an endpoint before you pay it (`vet_endpoint`), plus 25 more cybersecurity tools (vuln scans, threat intel, compliance, code security, identity). Per-call billing via API key or x402 USDC; free discovery tier. Hosted.
 ```
 
 ### Pre-submission checklist
