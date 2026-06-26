@@ -11,15 +11,34 @@ export interface AuthenticatedRequest extends Request {
   toolPrice?: number;
 }
 
-export async function apiKeyAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  const authHeader = req.headers["authorization"];
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    req.authMethod = "none";
-    return next();
+/**
+ * Pull a raw `aegis_` API key out of request headers, accepting three forms so
+ * any client or gateway works:
+ *   - `Authorization: Bearer aegis_...`  (canonical)
+ *   - `Authorization: aegis_...`         (bare — e.g. the Smithery gateway forwarding a config value)
+ *   - `X-API-Key: aegis_...`             (common alternative header)
+ * Returns undefined when no aegis_ key is present (caller falls through to x402/free).
+ * Pure + exported for unit testing.
+ */
+export function extractApiKey(headers: {
+  authorization?: string | string[];
+  "x-api-key"?: string | string[];
+}): string | undefined {
+  const auth = Array.isArray(headers.authorization) ? headers.authorization[0] : headers.authorization;
+  const xak = Array.isArray(headers["x-api-key"]) ? headers["x-api-key"][0] : headers["x-api-key"];
+  let rawKey: string | undefined;
+  if (auth && auth.trim()) {
+    const m = auth.match(/^Bearer\s+(.+)$/i); // tolerate any casing of "Bearer"
+    rawKey = (m ? m[1] : auth).trim();
+  } else if (xak && xak.trim()) {
+    rawKey = xak.trim();
   }
+  return rawKey && rawKey.startsWith("aegis_") ? rawKey : undefined;
+}
 
-  const rawKey = authHeader.slice(7);
-  if (!rawKey.startsWith("aegis_")) {
+export async function apiKeyAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  const rawKey = extractApiKey(req.headers);
+  if (!rawKey) {
     req.authMethod = "none";
     return next();
   }
