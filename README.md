@@ -1,5 +1,7 @@
 # AgentAegis MCP Server
 
+[![Glama score](https://glama.ai/mcp/servers/astafford8488/agentaegis-mcp/badges/score.svg)](https://glama.ai/mcp/servers/astafford8488/agentaegis-mcp)
+
 Every cybersecurity service, callable by any AI agent, billed per use.
 
 AgentAegis is an MCP server that lets AI agents perform cybersecurity operations on demand — from compliance checks to vulnerability scans to code security analysis. It wraps best-in-class open-source scanning engines (nmap, Nuclei, sslyze, Semgrep, trufflehog, trivy) in clean, agent-discoverable tool definitions with structured inputs and outputs.
