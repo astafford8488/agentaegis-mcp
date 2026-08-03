@@ -126,30 +126,37 @@ curl -X POST https://api.agentaegis.org/v1/customers/<id>/api-keys \
 
 **Option 2: x402 Micropayment** — No signup. Each tool call settles on-chain via USDC. The server returns `402 Payment Required` with payment requirements; the client signs and retries with `X-PAYMENT` header.
 
-## Tool Catalog (20 tools)
+## Tool Catalog (28 tools: 23 paid + 5 free)
+
+Live pricing is always at [`/pricing`](https://agentaegis-mcp-production.up.railway.app/pricing).
 
 | Tool | Category | Description | Price |
 |------|----------|-------------|-------|
-| `compliance_framework_check` | Compliance | SOC 2, ISO 27001, HIPAA, PCI-DSS, NIST CSF assessment | $0.50 |
-| `evidence_collect` | Compliance | Evidence collection plans for audit controls | $0.25 |
-| `control_gap_analysis` | Compliance | Prioritized remediation roadmap | $0.50 |
-| `audit_report_generate` | Compliance | Audit-ready compliance reports | $1.00 |
-| `policy_generate` | Compliance | Tailored security policy documents | $0.50 |
-| `vuln_scan_network` | Vuln Mgmt | Network port and vulnerability scan | $1.00 |
-| `vuln_scan_web_app` | Vuln Mgmt | OWASP Top 10 web app scan | $1.50 |
-| `vuln_prioritize` | Vuln Mgmt | Risk-based vulnerability prioritization | $0.25 |
-| `cve_lookup` | Vuln Mgmt | CVE details, CVSS, KEV status | $0.10 |
-| `ssl_tls_audit` | Vuln Mgmt | SSL/TLS configuration audit | $0.25 |
-| `sast_scan` | Code Security | Static security analysis | $1.00 |
-| `secret_scan` | Code Security | Hardcoded secret detection | $0.50 |
-| `dependency_audit` | Code Security | Dependency vulnerability scan | $0.50 |
-| `incident_triage` | Blue Team | Incident classification & response plan | $0.75 |
-| `threat_intel_lookup` | Blue Team | IOC reputation lookup | $0.25 |
-| `dns_security_check` | Blue Team | DNS security audit | $0.25 |
-| `email_security_audit` | Blue Team | Email security configuration audit | $0.50 |
-| `access_review` | Identity | Access privilege audit | $0.50 |
-| `mfa_audit` | Identity | MFA coverage assessment | $0.25 |
-| `credential_check` | Offensive | Breach database lookup | $0.50 |
+| `compliance_framework_check` | Compliance | SOC 2, ISO 27001, HIPAA, PCI-DSS, NIST CSF assessment | $2.00 |
+| `evidence_collect` | Compliance | Evidence collection plans for audit controls | $1.00 |
+| `control_gap_analysis` | Compliance | Prioritized remediation roadmap | $2.00 |
+| `audit_report_generate` | Compliance | Audit-ready compliance reports | $5.00 |
+| `policy_generate` | Compliance | Tailored security policy documents | $2.00 |
+| `vuln_scan_network` | Vuln Mgmt | Network port and vulnerability scan | $3.00 |
+| `vuln_scan_web_app` | Vuln Mgmt | OWASP Top 10 web app scan | $5.00 |
+| `vuln_prioritize` | Vuln Mgmt | Risk-based vulnerability prioritization | $1.00 |
+| `cve_lookup` | Vuln Mgmt | CVE details, CVSS, KEV status | $1.00 |
+| `ssl_tls_audit` | Vuln Mgmt | SSL/TLS configuration audit | $1.00 |
+| `sast_scan` | Code Security | Static security analysis | $5.00 |
+| `secret_scan` | Code Security | Hardcoded secret detection | $2.00 |
+| `dependency_audit` | Code Security | Dependency vulnerability scan | $2.00 |
+| `incident_triage` | Blue Team | Incident classification & response plan | $3.00 |
+| `threat_intel_lookup` | Blue Team | IOC reputation lookup | $2.00 |
+| `dns_security_check` | Blue Team | DNS security audit | $1.00 |
+| `email_security_audit` | Blue Team | Email security configuration audit | $2.00 |
+| `access_review` | Identity | Access privilege audit | $1.00 |
+| `mfa_audit` | Identity | MFA coverage assessment | $1.00 |
+| `credential_check` | Offensive | Breach database lookup | $2.00 |
+| `vet_endpoint` | Trust Layer | Composite PROCEED/CAUTION/BLOCK trust verdict on an endpoint before your agent calls or pays it | $3.00 |
+| `scan_mcp_plugin` | Trust Layer | Supply-chain scan of an MCP server/plugin before your agent installs or trusts it | $5.00 |
+| `scan_skill` | Trust Layer | Prompt-injection and over-broad-grant scan of an agent skill (SKILL.md) | $5.00 |
+
+Free tools (no charge): `help`, `account_balance`, `agent_whoami`, `agent_history`, `agent_scan_get`.
 
 ## Compliance Frameworks Supported
 
