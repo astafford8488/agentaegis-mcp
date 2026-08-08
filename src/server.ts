@@ -49,7 +49,9 @@ import { agentScanGet, agentScanGetSchema } from "./tools/account/agentScanGet.j
 
 // Middleware
 import { verifyPayment } from "./middleware/x402.js";
-import { TOOL_PRICING } from "./types/mcp.js";
+import { TOOL_PRICING, formatUsd } from "./types/mcp.js";
+import { buildServerInstructions } from "./instructions.js";
+import { registerPrompts } from "./prompts.js";
 import { getRequestContext } from "./auth/requestContext.js";
 import { chargeApiKey } from "./auth/apiKeyAuth.js";
 import { isDbConfigured } from "./db/client.js";
@@ -194,7 +196,12 @@ function wrapTool(toolName: string, handler: (args: any) => Promise<any>, option
 }
 
 /** Register a PAID tool: injects the previous_scan_id lineage param into its
- *  schema and wraps the handler with billing + scan persistence. */
+ *  schema and wraps the handler with billing + scan persistence.
+ *
+ *  The price is APPENDED to the description from TOOL_PRICING rather than
+ *  written into each string — an agent deciding whether to spend the user's
+ *  money needs the cost in front of it, and a repricing must never leave 22
+ *  descriptions quoting the old number. */
 function registerPaidTool(
   server: McpServer,
   name: string,
@@ -203,56 +210,72 @@ function registerPaidTool(
   handler: (args: any) => Promise<any>,
   options: ServerOptions,
 ) {
-  server.tool(name, description, { ...shape, ...CHAIN_PARAM }, wrapTool(name, handler, options));
+  const price = TOOL_PRICING[name] ?? 0;
+  const advertised = price > 0 ? `${description} Costs ${formatUsd(price)} per call.` : description;
+  server.tool(name, advertised, { ...shape, ...CHAIN_PARAM }, wrapTool(name, handler, options));
 }
 
 export function buildMcpServer(options: ServerOptions = {}): McpServer {
-  const server = new McpServer({
-    name: "agentaegis",
-    version: "0.2.0",
-  });
+  const server = new McpServer(
+    {
+      name: "agentaegis",
+      version: "0.2.0",
+    },
+    {
+      // Surfaced on `initialize` and injected into the host's system prompt by
+      // most MCP clients — the only tool-routing guidance that reaches an agent
+      // with nothing installed on the caller's side. See src/instructions.ts.
+      instructions: buildServerInstructions({
+        includeCredentialCheck: !!process.env.HIBP_API_KEY,
+      }),
+    }
+  );
+
+  // Guided workflows (prompts/list + prompts/get). Free: the x402 gate only
+  // charges `tools/call`, and rendering a prompt executes no tool. See src/prompts.ts.
+  registerPrompts(server);
 
   // Compliance & Audit
-  registerPaidTool(server, "compliance_framework_check", "Assess an organization's security posture against a compliance framework (SOC 2, ISO 27001, HIPAA, PCI-DSS, NIST CSF).", complianceFrameworkCheckSchema.shape, complianceFrameworkCheck, options);
-  registerPaidTool(server, "evidence_collect", "Generate evidence collection plans for compliance controls.", evidenceCollectSchema.shape, evidenceCollect, options);
-  registerPaidTool(server, "control_gap_analysis", "Deep-dive analysis of compliance control gaps with remediation roadmap.", controlGapAnalysisSchema.shape, controlGapAnalysis, options);
-  registerPaidTool(server, "audit_report_generate", "Generate audit-ready compliance reports.", auditReportGenerateSchema.shape, auditReportGenerate, options);
-  registerPaidTool(server, "policy_generate", "Generate tailored security policy documents.", policyGenerateSchema.shape, policyGenerate, options);
+  registerPaidTool(server, "compliance_framework_check", "Assess an organization's security posture against a compliance framework (SOC 2, ISO 27001, HIPAA, PCI-DSS, NIST CSF) and report per-control status. Use this FIRST when asked whether the org is audit-ready; control_gap_analysis builds on its output.", complianceFrameworkCheckSchema.shape, complianceFrameworkCheck, options);
+  registerPaidTool(server, "evidence_collect", "Build an evidence-collection plan for specific compliance controls: what artifact each control needs, where it comes from, and what makes it sufficient. Use when preparing for a real audit, after the gaps are known. Plans the collection; does not gather evidence for you.", evidenceCollectSchema.shape, evidenceCollect, options);
+  registerPaidTool(server, "control_gap_analysis", "Turn unmet compliance controls into a prioritized remediation roadmap with effort estimates. Use after compliance_framework_check to answer 'what do we fix first'.", controlGapAnalysisSchema.shape, controlGapAnalysis, options);
+  registerPaidTool(server, "audit_report_generate", "Synthesize findings into an audit-ready compliance report. Use at the END of an engagement, once gaps are closed. If the user only wants to know where they currently stand, run compliance_framework_check instead — it costs less and answers that question directly.", auditReportGenerateSchema.shape, auditReportGenerate, options);
+  registerPaidTool(server, "policy_generate", "Generate a tailored written security policy (incident response, access control, encryption, vendor management, remote work, and similar). Use when a control gap specifically calls for documented policy.", policyGenerateSchema.shape, policyGenerate, options);
 
   // Vuln Mgmt
-  registerPaidTool(server, "vuln_scan_network", "Scan an IP/domain for open ports, services, and vulnerabilities.", vulnScanNetworkSchema.shape, vulnScanNetwork, options);
-  registerPaidTool(server, "vuln_scan_web_app", "Scan a web app for OWASP Top 10 vulnerabilities.", vulnScanWebAppSchema.shape, vulnScanWebApp, options);
-  registerPaidTool(server, "vuln_prioritize", "Prioritize vulnerabilities by exploitability and business impact.", vulnPrioritizeSchema.shape, vulnPrioritize, options);
-  registerPaidTool(server, "cve_lookup", "Look up CVE details, CVSS scores, and patches.", cveLookupSchema.shape, cveLookup, options);
-  registerPaidTool(server, "ssl_tls_audit", "Audit SSL/TLS configuration for a domain.", sslTlsAuditSchema.shape, sslTlsAudit, options);
+  registerPaidTool(server, "vuln_scan_network", "Discover open ports, running services and known vulnerabilities on an IP or domain (nmap). SENDS REAL TRAFFIC to the target and may trigger intrusion detection — only run against hosts the caller owns or is explicitly authorized to test, and confirm that first. Pass async:true to get a job_id to poll instead of blocking.", vulnScanNetworkSchema.shape, vulnScanNetwork, options);
+  registerPaidTool(server, "vuln_scan_web_app", "Scan a web application for OWASP Top 10 issues and known CVEs (Nuclei). SENDS REAL TRAFFIC to the target — authorized targets only, confirm before calling. Pass async:true to get a job_id to poll instead of blocking.", vulnScanWebAppSchema.shape, vulnScanWebApp, options);
+  registerPaidTool(server, "vuln_prioritize", "Rank vulnerabilities you already have by exploitability and business impact, and group them into remediation actions. Analyzes findings you supply; it discovers nothing on its own.", vulnPrioritizeSchema.shape, vulnPrioritize, options);
+  registerPaidTool(server, "cve_lookup", "Look up one CVE by identifier: CVSS score and vector, affected products, patch availability and references. Use when a specific CVE ID is already known.", cveLookupSchema.shape, cveLookup, options);
+  registerPaidTool(server, "ssl_tls_audit", "Audit a domain's TLS configuration (sslyze): certificate validity and expiry, protocol versions, cipher suites, and known TLS weaknesses. Passive — safe against any host.", sslTlsAuditSchema.shape, sslTlsAudit, options);
 
   // Code Security
-  registerPaidTool(server, "sast_scan", "Static analysis for security vulnerabilities. Supports Python, JS/TS, Java, Go, Ruby, PHP, C/C++.", sastScanSchema.shape, sastScan, options);
-  registerPaidTool(server, "secret_scan", "Detect hardcoded secrets in source code.", secretScanSchema.shape, secretScan, options);
-  registerPaidTool(server, "dependency_audit", "Audit dependencies for known vulnerabilities (npm, pip, Go, Ruby, Java, Cargo).", dependencyAuditSchema.shape, dependencyAudit, options);
+  registerPaidTool(server, "sast_scan", "Static analysis of source code or an https git repo for security flaws (Semgrep): injection, unsafe deserialization, path traversal, crypto misuse. Python, JS/TS, Java, Go, Ruby, PHP, C/C++. For code LOGIC flaws — use secret_scan for hardcoded credentials and dependency_audit for vulnerable packages.", sastScanSchema.shape, sastScan, options);
+  registerPaidTool(server, "secret_scan", "Detect hardcoded credentials, API keys and tokens in source code or an https git repo (trufflehog), verified against the issuing provider where supported. Use when the question is 'did we commit a secret'.", secretScanSchema.shape, secretScan, options);
+  registerPaidTool(server, "dependency_audit", "Audit a dependency manifest or https git repo for known-vulnerable packages (trivy): npm, pip, Go, Ruby, Java, Cargo. The cheapest, highest-signal first step when assessing an unfamiliar repository.", dependencyAuditSchema.shape, dependencyAudit, options);
 
   // Blue Team
-  registerPaidTool(server, "incident_triage", "Classify and respond to security incidents.", incidentTriageSchema.shape, incidentTriage, options);
-  registerPaidTool(server, "threat_intel_lookup", "IOC lookup against threat intel feeds.", threatIntelLookupSchema.shape, threatIntelLookup, options);
-  registerPaidTool(server, "dns_security_check", "Check DNS security (SPF, DKIM, DMARC, DNSSEC).", dnsSecurityCheckSchema.shape, dnsSecurityCheck, options);
-  registerPaidTool(server, "email_security_audit", "Comprehensive email security audit.", emailSecurityAuditSchema.shape, emailSecurityAudit, options);
+  registerPaidTool(server, "incident_triage", "Classify a security incident and produce severity, likely category, containment steps and a response plan. Use when something has already happened. If all you have is a suspicious IP or domain, run threat_intel_lookup first — it is cheaper and may settle the question.", incidentTriageSchema.shape, incidentTriage, options);
+  registerPaidTool(server, "threat_intel_lookup", "Reputation and indicator lookup for an IP or domain across AbuseIPDB, AlienVault OTX and abuse.ch. The cheapest way to check whether an indicator is known-bad. Interpret with care: large CDN, cloud and payment infrastructure routinely returns reputation hits, so only a curated active-malware hit is strong evidence on its own.", threatIntelLookupSchema.shape, threatIntelLookup, options);
+  registerPaidTool(server, "dns_security_check", "Check a domain's DNS security records — SPF, DKIM, DMARC, DNSSEC — and grade the configuration. Passive. Covers the records themselves; for full spoofability posture use email_security_audit.", dnsSecurityCheckSchema.shape, dnsSecurityCheck, options);
+  registerPaidTool(server, "email_security_audit", "Full email-security posture for a domain: whether mail from it can be spoofed, with DMARC/SPF/DKIM alignment and policy strength. A superset of dns_security_check for the email question specifically.", emailSecurityAuditSchema.shape, emailSecurityAudit, options);
 
   // Identity
-  registerPaidTool(server, "access_review", "Audit user access against least-privilege.", accessReviewSchema.shape, accessReview, options);
-  registerPaidTool(server, "mfa_audit", "Assess MFA coverage and strength.", mfaAuditSchema.shape, mfaAudit, options);
+  registerPaidTool(server, "access_review", "Review user and role assignments you supply against least-privilege, flagging excessive, stale or orphaned access. Analyzes data the caller provides; it does not connect to an identity provider.", accessReviewSchema.shape, accessReview, options);
+  registerPaidTool(server, "mfa_audit", "Assess MFA coverage and factor strength across a user or configuration set you supply, flagging unenrolled accounts and weak factors such as SMS. Analyzes data the caller provides; it does not connect to an identity provider.", mfaAuditSchema.shape, mfaAudit, options);
 
   // Offensive — credential_check's only data source is HIBP, which has no
   // fallback. x402 settles payment BEFORE the tool runs, so exposing it without
   // a key means a caller pays and just gets "HIBP_API_KEY not configured". Only
   // register it when the key is set (it auto-enables once HIBP_API_KEY is added).
   if (process.env.HIBP_API_KEY) {
-    registerPaidTool(server, "credential_check", "Check email/domain in breach databases (HIBP).", credentialCheckSchema.shape, credentialCheck, options);
+    registerPaidTool(server, "credential_check", "Check whether an email address or domain appears in known credential-breach corpora (Have I Been Pwned), with the breaches and data classes exposed. Use when assessing account-takeover exposure.", credentialCheckSchema.shape, credentialCheck, options);
   }
 
   // Trust Layer (L2) — the flagship. Composite PROCEED/CAUTION/BLOCK verdict for
   // an endpoint an agent is about to call or pay: TLS + DNS hygiene + threat
   // intel + domain age → one decision. Designed to gate a per-invocation payment.
-  registerPaidTool(server, "vet_endpoint", "Composite trust verdict (PROCEED/CAUTION/BLOCK) for an endpoint an agent is about to call or pay — combines TLS/cert health, DNS hygiene, threat-intel reputation, and domain age into one decision with reasons.", vetEndpointSchema.shape, vetEndpoint, options);
+  registerPaidTool(server, "vet_endpoint", "Composite trust verdict (PROCEED/CAUTION/BLOCK) for an endpoint an agent is about to call or pay — combines TLS/cert health, DNS hygiene, threat-intel reputation, and domain age into one decision with reasons. Prefer this over running ssl_tls_audit + dns_security_check + threat_intel_lookup separately: it costs less than the sum and returns a decision rather than three reports to reconcile.", vetEndpointSchema.shape, vetEndpoint, options);
 
   // scan_mcp_plugin (L2) — supply-chain trust scan of an MCP server BEFORE an
   // agent installs it: exfiltration, prompt-injection sinks, dangerous

@@ -52,3 +52,10 @@ export const TOOL_PRICING: Record<string, number> = {
   agent_history: 0,
   agent_scan_get: 0,
 };
+
+/** Render a TOOL_PRICING amount for display ($3, $2.50). Single formatter so
+ *  the price an agent reads in a tool description, in the server instructions
+ *  and in a prompt's cost estimate can never disagree. */
+export function formatUsd(amount: number): string {
+  return `$${amount.toFixed(2).replace(/\.00$/, "")}`;
+}
