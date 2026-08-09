@@ -34,6 +34,7 @@ npm run dev:http  # local HTTP transport with watch
 | Path | What lives there |
 |---|---|
 | `src/server.ts` | Tool registration, `wrapTool` billing + scan persistence, server `instructions` |
+| `src/toolCatalog.ts` | **Single source of truth for tool copy** — description, annotations, Bazaar discovery, HTTP-rail text |
 | `src/instructions.ts` | The server-level guidance injected into every connecting client's system prompt |
 | `src/prompts.ts` | MCP prompts — guided multi-tool workflows |
 | `src/transport/httpServer.ts` | Streamable HTTP transport **and the live x402 gate** |
@@ -50,7 +51,15 @@ npm run dev:http  # local HTTP transport with watch
 
 **`TOOL_PRICING` is the only place a price is defined.** `wrapTool` reads it to decide free vs paid, the x402 gate reads it to build the payment challenge, and `src/instructions.ts` generates its catalog from it. Never hardcode a price anywhere else. Adding a tool without a `TOOL_PRICING` entry silently makes it free.
 
-**Free tools must be priced `0` and registered with `server.tool(...)` + `wrapTool(name, fn, { skipPayment: true })`,** not `registerPaidTool`. Free tools bypass billing and scan persistence entirely.
+**`TOOL_CATALOG` is the only place tool copy is defined.** Description, annotations, Bazaar discovery text and the HTTP-rail resource string all live in `src/toolCatalog.ts`; `server.ts`, `auth/bazaarCatalog.ts` and `transport/httpResource.ts` read from it. Registration passes name + schema + handler only. Never write a dollar amount into a description — the price is appended centrally.
+
+This replaced four hand-maintained copies that had already drifted: the Bazaar map was missing `vet_endpoint`, `scan_mcp_plugin` and `scan_skill` entirely, so the flagship tools were unlistable and their 402 challenge read "single tool invocation".
+
+The `resource` strings are **already indexed in the live CDP Bazaar**. Editing one changes a live listing, so change them deliberately.
+
+**Free tools must be priced `0` and registered with `registerFreeTool`,** not `registerPaidTool`. Free tools bypass billing and scan persistence entirely.
+
+**Annotations must stay honest.** `readOnlyHint` refers to the TARGET's state. Everything is read-only except `vuln_scan_network` and `vuln_scan_web_app`, which send probe traffic that can trip intrusion detection or destabilise a fragile service — clients use these hints to decide what to auto-approve, so do not mark a scanner read-only for convenience. No hint can express "this costs money"; that lives in the description and the server instructions.
 
 **The live x402 gate is inline in `src/transport/httpServer.ts`,** not in `processX402Payment` (which is unused legacy). It charges only when `body.method === "tools/call"` and the tool has a nonzero price and no API key is present. Any other JSON-RPC method — `initialize`, `tools/list`, `prompts/list`, `prompts/get` — passes through free. Keep it that way: charging for discovery would break every client.
 

@@ -28,6 +28,7 @@ import { dependencyAudit, dependencyAuditSchema } from "../tools/codeSecurity/de
 import { scanMcpPlugin, scanMcpPluginSchema } from "../tools/trustLayer/scanMcpPlugin.js";
 import { scanSkill, scanSkillSchema } from "../tools/trustLayer/scanSkill.js";
 import { TOOL_PRICING } from "../types/mcp.js";
+import { toolMeta } from "../toolCatalog.js";
 import { isCdpMode } from "../auth/x402Cdp.js";
 import { logUsage } from "../db/usageLog.js";
 import { resolveAgent } from "../db/agents.js";
@@ -38,7 +39,6 @@ interface HttpResource {
   toolName: string;
   schema: ZodTypeAny;
   handler: (input: unknown) => Promise<unknown>;
-  description: string;
   inputBody: Record<string, unknown>;   // example body → Bazaar discovery inputSchema
   outputExample: Record<string, unknown>;
 }
@@ -49,8 +49,6 @@ const RESOURCES: HttpResource[] = [
     toolName: "vet_endpoint",
     schema: vetEndpointSchema,
     handler: vetEndpoint as (i: unknown) => Promise<unknown>,
-    description:
-      "AgentAegis vet_endpoint — composite PROCEED/CAUTION/BLOCK safety verdict for an endpoint an AI agent is about to call or pay. Live TLS/cert, DNS hygiene, threat-intel (domain + resolved IP), and domain-age signals → one trust score with reasons.",
     inputBody: { endpoint: "example.com or https://api.example.com/pay" },
     outputExample: { endpoint: "stripe.com", verdict: "PROCEED", trust_score: 95, reasons: ["valid TLS", "clean threat intel"] },
   },
@@ -59,8 +57,6 @@ const RESOURCES: HttpResource[] = [
     toolName: "cve_lookup",
     schema: cveLookupSchema,
     handler: cveLookup as (i: unknown) => Promise<unknown>,
-    description:
-      "AgentAegis cve_lookup — CVSS score, severity, CWE classifications, CISA KEV (known-exploited) status, affected products and references for a CVE id. NVD with CIRCL + OSV fallback for reliability.",
     inputBody: { cve_id: "CVE-2024-3094" },
     outputExample: { cve_id: "CVE-2021-44228", severity: "CRITICAL", cvss_v3: { score: 10 }, known_exploited: true },
   },
@@ -69,8 +65,6 @@ const RESOURCES: HttpResource[] = [
     toolName: "ssl_tls_audit",
     schema: sslTlsAuditSchema,
     handler: sslTlsAudit as (i: unknown) => Promise<unknown>,
-    description:
-      "AgentAegis ssl_tls_audit — TLS/certificate health grade for a host: supported protocols, cipher strength, certificate validity + days-to-expiry, and known TLS vulnerabilities.",
     inputBody: { hostname: "example.com" },
     outputExample: { hostname: "stripe.com", grade: { grade: "A+", score: 100 } },
   },
@@ -79,8 +73,6 @@ const RESOURCES: HttpResource[] = [
     toolName: "threat_intel_lookup",
     schema: threatIntelLookupSchema,
     handler: threatIntelLookup as (i: unknown) => Promise<unknown>,
-    description:
-      "AgentAegis threat_intel_lookup — reputation + threat verdict for an IOC (IP, domain, URL, or file hash) aggregated across AbuseIPDB, AlienVault OTX, and abuse.ch.",
     inputBody: { indicator: "45.155.205.233", indicator_type: "ip" },
     outputExample: { indicator: "45.155.205.233", malicious: true, threat_score: 80 },
   },
@@ -89,8 +81,6 @@ const RESOURCES: HttpResource[] = [
     toolName: "dependency_audit",
     schema: dependencyAuditSchema,
     handler: dependencyAudit as (i: unknown) => Promise<unknown>,
-    description:
-      "AgentAegis dependency_audit — scan a git repository or a dependency manifest (npm/pip/go/ruby/java/cargo) for known-CVE packages, with severities and upgrade fixes (Trivy).",
     inputBody: { source: { type: "git_repo", url: "https://github.com/owner/repo" } },
     outputExample: { summary: { total_vulnerabilities: 12, critical: 2, high: 5 } },
   },
@@ -99,8 +89,6 @@ const RESOURCES: HttpResource[] = [
     toolName: "scan_mcp_plugin",
     schema: scanMcpPluginSchema,
     handler: scanMcpPlugin as (i: unknown) => Promise<unknown>,
-    description:
-      "AgentAegis scan_mcp_plugin — supply-chain trust scan of an MCP server or agent skill BEFORE you install/trust it. Clones a git repo (or takes a code snippet) and flags exfiltration (secrets/env to the network), prompt-injection sinks (hijack phrases + hidden unicode), dangerous capabilities (eval/shell/dynamic exec), npm install hooks, and obfuscation → one PROCEED/CAUTION/BLOCK verdict with findings.",
     inputBody: { source: { type: "git_repo", url: "https://github.com/owner/mcp-server" } },
     outputExample: { verdict: "BLOCK", trust_score: 35, summary: { exfiltration: 1, prompt_injection: 2, dangerous_capabilities: 1 }, reasons: ["Exfiltration pattern: reads secrets/env and sends to the network."] },
   },
@@ -109,8 +97,6 @@ const RESOURCES: HttpResource[] = [
     toolName: "scan_skill",
     schema: scanSkillSchema,
     handler: scanSkill as (i: unknown) => Promise<unknown>,
-    description:
-      "AgentAegis scan_skill — supply-chain trust scan of an AGENT SKILL (a SKILL.md + bundled scripts) BEFORE you install/trust it. Flags prompt-injection / hidden-unicode in the instructions the agent will follow (hard block), over-broad allowed-tools grants, plus exfiltration, dangerous capabilities, secrets and obfuscation in bundled code → one PROCEED/CAUTION/BLOCK verdict.",
     inputBody: { source: { type: "git_repo", url: "https://github.com/owner/skill-repo" } },
     outputExample: { verdict: "BLOCK", trust_score: 0, summary: { instruction_injection: true, overbroad_tools: ["Bash"] }, reasons: ["SKILL.md instructions contain prompt-injection directives."] },
   },
@@ -137,7 +123,7 @@ export function mountHttpResources(app: Express): void {
       price: `$${price.toFixed(2)}`,
       network: network as never,
       config: {
-        description: r.description,
+        description: toolMeta(r.toolName)?.resource ?? `AgentAegis ${r.toolName}`,
         mimeType: "application/json",
         maxTimeoutSeconds: 60,
         discoverable: true,

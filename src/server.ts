@@ -52,6 +52,7 @@ import { verifyPayment } from "./middleware/x402.js";
 import { TOOL_PRICING, formatUsd } from "./types/mcp.js";
 import { buildServerInstructions } from "./instructions.js";
 import { registerPrompts } from "./prompts.js";
+import { toolMeta } from "./toolCatalog.js";
 import { getRequestContext } from "./auth/requestContext.js";
 import { chargeApiKey } from "./auth/apiKeyAuth.js";
 import { isDbConfigured } from "./db/client.js";
@@ -195,24 +196,55 @@ function wrapTool(toolName: string, handler: (args: any) => Promise<any>, option
   };
 }
 
+/** Look up a tool's description + annotations, failing loudly if absent.
+ *  A tool with no catalog entry would otherwise register with no description
+ *  and no risk hints, which is worse than not registering at all. */
+function meta(name: string) {
+  const entry = toolMeta(name);
+  if (!entry) throw new Error(`Tool "${name}" has no entry in TOOL_CATALOG (src/toolCatalog.ts)`);
+  return entry;
+}
+
 /** Register a PAID tool: injects the previous_scan_id lineage param into its
  *  schema and wraps the handler with billing + scan persistence.
  *
- *  The price is APPENDED to the description from TOOL_PRICING rather than
- *  written into each string — an agent deciding whether to spend the user's
- *  money needs the cost in front of it, and a repricing must never leave 22
- *  descriptions quoting the old number. */
+ *  Description and annotations come from TOOL_CATALOG; the price is appended
+ *  from TOOL_PRICING. An agent deciding whether to spend the user's money needs
+ *  the cost in front of it, and a repricing must never leave 22 descriptions
+ *  quoting the old number. */
 function registerPaidTool(
   server: McpServer,
   name: string,
-  description: string,
   shape: ZodRawShape,
   handler: (args: any) => Promise<any>,
   options: ServerOptions,
 ) {
+  const { description, annotations } = meta(name);
   const price = TOOL_PRICING[name] ?? 0;
-  const advertised = price > 0 ? `${description} Costs ${formatUsd(price)} per call.` : description;
-  server.tool(name, advertised, { ...shape, ...CHAIN_PARAM }, wrapTool(name, handler, options));
+  server.registerTool(
+    name,
+    {
+      description: price > 0 ? `${description} Costs ${formatUsd(price)} per call.` : description,
+      inputSchema: { ...shape, ...CHAIN_PARAM },
+      annotations,
+    },
+    wrapTool(name, handler, options) as never,
+  );
+}
+
+/** Register a FREE tool: no billing, no scan persistence, no lineage param. */
+function registerFreeTool(
+  server: McpServer,
+  name: string,
+  shape: ZodRawShape,
+  handler: (args: any) => Promise<any>,
+) {
+  const { description, annotations } = meta(name);
+  server.registerTool(
+    name,
+    { description, inputSchema: shape, annotations },
+    wrapTool(name, handler, { skipPayment: true }) as never,
+  );
 }
 
 export function buildMcpServer(options: ServerOptions = {}): McpServer {
@@ -235,97 +267,61 @@ export function buildMcpServer(options: ServerOptions = {}): McpServer {
   // charges `tools/call`, and rendering a prompt executes no tool. See src/prompts.ts.
   registerPrompts(server);
 
-  // Compliance & Audit
-  registerPaidTool(server, "compliance_framework_check", "Assess an organization's security posture against a compliance framework (SOC 2, ISO 27001, HIPAA, PCI-DSS, NIST CSF) and report per-control status. Use this FIRST when asked whether the org is audit-ready; control_gap_analysis builds on its output.", complianceFrameworkCheckSchema.shape, complianceFrameworkCheck, options);
-  registerPaidTool(server, "evidence_collect", "Build an evidence-collection plan for specific compliance controls: what artifact each control needs, where it comes from, and what makes it sufficient. Use when preparing for a real audit, after the gaps are known. Plans the collection; does not gather evidence for you.", evidenceCollectSchema.shape, evidenceCollect, options);
-  registerPaidTool(server, "control_gap_analysis", "Turn unmet compliance controls into a prioritized remediation roadmap with effort estimates. Use after compliance_framework_check to answer 'what do we fix first'.", controlGapAnalysisSchema.shape, controlGapAnalysis, options);
-  registerPaidTool(server, "audit_report_generate", "Synthesize findings into an audit-ready compliance report. Use at the END of an engagement, once gaps are closed. If the user only wants to know where they currently stand, run compliance_framework_check instead — it costs less and answers that question directly.", auditReportGenerateSchema.shape, auditReportGenerate, options);
-  registerPaidTool(server, "policy_generate", "Generate a tailored written security policy (incident response, access control, encryption, vendor management, remote work, and similar). Use when a control gap specifically calls for documented policy.", policyGenerateSchema.shape, policyGenerate, options);
+  // Registration is name + schema + handler only; the description and the
+  // annotations come from TOOL_CATALOG (src/toolCatalog.ts) and the price from
+  // TOOL_PRICING, so all agent-facing copy has exactly one home.
 
-  // Vuln Mgmt
-  registerPaidTool(server, "vuln_scan_network", "Discover open ports, running services and known vulnerabilities on an IP or domain (nmap). SENDS REAL TRAFFIC to the target and may trigger intrusion detection — only run against hosts the caller owns or is explicitly authorized to test, and confirm that first. Pass async:true to get a job_id to poll instead of blocking.", vulnScanNetworkSchema.shape, vulnScanNetwork, options);
-  registerPaidTool(server, "vuln_scan_web_app", "Scan a web application for OWASP Top 10 issues and known CVEs (Nuclei). SENDS REAL TRAFFIC to the target — authorized targets only, confirm before calling. Pass async:true to get a job_id to poll instead of blocking.", vulnScanWebAppSchema.shape, vulnScanWebApp, options);
-  registerPaidTool(server, "vuln_prioritize", "Rank vulnerabilities you already have by exploitability and business impact, and group them into remediation actions. Analyzes findings you supply; it discovers nothing on its own.", vulnPrioritizeSchema.shape, vulnPrioritize, options);
-  registerPaidTool(server, "cve_lookup", "Look up one CVE by identifier: CVSS score and vector, affected products, patch availability and references. Use when a specific CVE ID is already known.", cveLookupSchema.shape, cveLookup, options);
-  registerPaidTool(server, "ssl_tls_audit", "Audit a domain's TLS configuration (sslyze): certificate validity and expiry, protocol versions, cipher suites, and known TLS weaknesses. Passive — safe against any host.", sslTlsAuditSchema.shape, sslTlsAudit, options);
+  // Compliance & Audit
+  registerPaidTool(server, "compliance_framework_check", complianceFrameworkCheckSchema.shape, complianceFrameworkCheck, options);
+  registerPaidTool(server, "evidence_collect", evidenceCollectSchema.shape, evidenceCollect, options);
+  registerPaidTool(server, "control_gap_analysis", controlGapAnalysisSchema.shape, controlGapAnalysis, options);
+  registerPaidTool(server, "audit_report_generate", auditReportGenerateSchema.shape, auditReportGenerate, options);
+  registerPaidTool(server, "policy_generate", policyGenerateSchema.shape, policyGenerate, options);
+
+  // Vuln Mgmt — vuln_scan_* are the only tools annotated as non-read-only:
+  // they send probe traffic that can trip IDS or destabilise a fragile service.
+  registerPaidTool(server, "vuln_scan_network", vulnScanNetworkSchema.shape, vulnScanNetwork, options);
+  registerPaidTool(server, "vuln_scan_web_app", vulnScanWebAppSchema.shape, vulnScanWebApp, options);
+  registerPaidTool(server, "vuln_prioritize", vulnPrioritizeSchema.shape, vulnPrioritize, options);
+  registerPaidTool(server, "cve_lookup", cveLookupSchema.shape, cveLookup, options);
+  registerPaidTool(server, "ssl_tls_audit", sslTlsAuditSchema.shape, sslTlsAudit, options);
 
   // Code Security
-  registerPaidTool(server, "sast_scan", "Static analysis of source code or an https git repo for security flaws (Semgrep): injection, unsafe deserialization, path traversal, crypto misuse. Python, JS/TS, Java, Go, Ruby, PHP, C/C++. For code LOGIC flaws — use secret_scan for hardcoded credentials and dependency_audit for vulnerable packages.", sastScanSchema.shape, sastScan, options);
-  registerPaidTool(server, "secret_scan", "Detect hardcoded credentials, API keys and tokens in source code or an https git repo (trufflehog), verified against the issuing provider where supported. Use when the question is 'did we commit a secret'.", secretScanSchema.shape, secretScan, options);
-  registerPaidTool(server, "dependency_audit", "Audit a dependency manifest or https git repo for known-vulnerable packages (trivy): npm, pip, Go, Ruby, Java, Cargo. The cheapest, highest-signal first step when assessing an unfamiliar repository.", dependencyAuditSchema.shape, dependencyAudit, options);
+  registerPaidTool(server, "sast_scan", sastScanSchema.shape, sastScan, options);
+  registerPaidTool(server, "secret_scan", secretScanSchema.shape, secretScan, options);
+  registerPaidTool(server, "dependency_audit", dependencyAuditSchema.shape, dependencyAudit, options);
 
   // Blue Team
-  registerPaidTool(server, "incident_triage", "Classify a security incident and produce severity, likely category, containment steps and a response plan. Use when something has already happened. If all you have is a suspicious IP or domain, run threat_intel_lookup first — it is cheaper and may settle the question.", incidentTriageSchema.shape, incidentTriage, options);
-  registerPaidTool(server, "threat_intel_lookup", "Reputation and indicator lookup for an IP or domain across AbuseIPDB, AlienVault OTX and abuse.ch. The cheapest way to check whether an indicator is known-bad. Interpret with care: large CDN, cloud and payment infrastructure routinely returns reputation hits, so only a curated active-malware hit is strong evidence on its own.", threatIntelLookupSchema.shape, threatIntelLookup, options);
-  registerPaidTool(server, "dns_security_check", "Check a domain's DNS security records — SPF, DKIM, DMARC, DNSSEC — and grade the configuration. Passive. Covers the records themselves; for full spoofability posture use email_security_audit.", dnsSecurityCheckSchema.shape, dnsSecurityCheck, options);
-  registerPaidTool(server, "email_security_audit", "Full email-security posture for a domain: whether mail from it can be spoofed, with DMARC/SPF/DKIM alignment and policy strength. A superset of dns_security_check for the email question specifically.", emailSecurityAuditSchema.shape, emailSecurityAudit, options);
+  registerPaidTool(server, "incident_triage", incidentTriageSchema.shape, incidentTriage, options);
+  registerPaidTool(server, "threat_intel_lookup", threatIntelLookupSchema.shape, threatIntelLookup, options);
+  registerPaidTool(server, "dns_security_check", dnsSecurityCheckSchema.shape, dnsSecurityCheck, options);
+  registerPaidTool(server, "email_security_audit", emailSecurityAuditSchema.shape, emailSecurityAudit, options);
 
   // Identity
-  registerPaidTool(server, "access_review", "Review user and role assignments you supply against least-privilege, flagging excessive, stale or orphaned access. Analyzes data the caller provides; it does not connect to an identity provider.", accessReviewSchema.shape, accessReview, options);
-  registerPaidTool(server, "mfa_audit", "Assess MFA coverage and factor strength across a user or configuration set you supply, flagging unenrolled accounts and weak factors such as SMS. Analyzes data the caller provides; it does not connect to an identity provider.", mfaAuditSchema.shape, mfaAudit, options);
+  registerPaidTool(server, "access_review", accessReviewSchema.shape, accessReview, options);
+  registerPaidTool(server, "mfa_audit", mfaAuditSchema.shape, mfaAudit, options);
 
   // Offensive — credential_check's only data source is HIBP, which has no
   // fallback. x402 settles payment BEFORE the tool runs, so exposing it without
   // a key means a caller pays and just gets "HIBP_API_KEY not configured". Only
   // register it when the key is set (it auto-enables once HIBP_API_KEY is added).
   if (process.env.HIBP_API_KEY) {
-    registerPaidTool(server, "credential_check", "Check whether an email address or domain appears in known credential-breach corpora (Have I Been Pwned), with the breaches and data classes exposed. Use when assessing account-takeover exposure.", credentialCheckSchema.shape, credentialCheck, options);
+    registerPaidTool(server, "credential_check", credentialCheckSchema.shape, credentialCheck, options);
   }
 
-  // Trust Layer (L2) — the flagship. Composite PROCEED/CAUTION/BLOCK verdict for
-  // an endpoint an agent is about to call or pay: TLS + DNS hygiene + threat
-  // intel + domain age → one decision. Designed to gate a per-invocation payment.
-  registerPaidTool(server, "vet_endpoint", "Composite trust verdict (PROCEED/CAUTION/BLOCK) for an endpoint an agent is about to call or pay — combines TLS/cert health, DNS hygiene, threat-intel reputation, and domain age into one decision with reasons. Prefer this over running ssl_tls_audit + dns_security_check + threat_intel_lookup separately: it costs less than the sum and returns a decision rather than three reports to reconcile.", vetEndpointSchema.shape, vetEndpoint, options);
+  // Trust Layer (L2) — the flagship. Composite verdicts an agent uses to decide
+  // whether to call, pay, install or trust something, BEFORE it does so.
+  registerPaidTool(server, "vet_endpoint", vetEndpointSchema.shape, vetEndpoint, options);
+  registerPaidTool(server, "scan_mcp_plugin", scanMcpPluginSchema.shape, scanMcpPlugin, options);
+  registerPaidTool(server, "scan_skill", scanSkillSchema.shape, scanSkill, options);
 
-  // scan_mcp_plugin (L2) — supply-chain trust scan of an MCP server BEFORE an
-  // agent installs it: exfiltration, prompt-injection sinks, dangerous
-  // capabilities, npm install hooks, obfuscation + Semgrep/secret scan → one verdict.
-  registerPaidTool(server, "scan_mcp_plugin", "Scan an MCP server (git repo or code) for supply-chain risk BEFORE trusting it — exfiltration (secrets/env to the network), prompt-injection sinks, dangerous capabilities, npm install hooks, obfuscation, plus Semgrep + secret scanning → a PROCEED/CAUTION/BLOCK verdict with findings.", scanMcpPluginSchema.shape, scanMcpPlugin, options);
-
-  // scan_skill (L2) — same core as scan_mcp_plugin, scoped to an agent SKILL.
-  // SKILL.md is INSTRUCTIONS the agent executes, so injection in it is hard-block;
-  // the frontmatter allowed-tools grant is also inspected.
-  registerPaidTool(server, "scan_skill", "Scan an agent SKILL (git repo or SKILL.md) for supply-chain risk BEFORE trusting it — prompt-injection / hidden-unicode in the instructions (hard block), over-broad allowed-tools grants, plus exfiltration, dangerous capabilities, secrets and obfuscation in bundled scripts → a PROCEED/CAUTION/BLOCK verdict.", scanSkillSchema.shape, scanSkill, options);
-
-  // Account — free tool so agents can self-check budget before paid calls.
-  // Bypasses payment gating entirely (skipPayment for this one regardless of options).
-  server.tool(
-    "account_balance",
-    "Returns the calling API key's prepaid balance, monthly limit, current month usage, and a breakdown of how many of each tool the customer can still afford. Free to call.",
-    accountBalanceSchema.shape,
-    wrapTool("account_balance", accountBalance, { skipPayment: true })
-  );
-
-  // Help — free FAQ tool so agents can discover authentication, billing,
-  // tool catalog, error semantics, integration patterns. Mirrors agentaegis.org/faq.
-  server.tool(
-    "help",
-    "Returns AgentAegis FAQ — authentication, balance/billing, tool catalog, async jobs, error codes, x402, rate limits, security. Optional topic filter. Free to call.",
-    helpSchema.shape,
-    wrapTool("help", help, { skipPayment: true })
-  );
-
-  // Phase 9.0 — identity & history (free). Let an agent discover its persistent
-  // identity, list prior scans, and retrieve a past scan's full output to chain
-  // workflows without re-paying.
-  server.tool(
-    "agent_whoami",
-    "Returns your persistent AgentAegis agent identity (agent_id), how you're identified (API key / wallet / anonymous session), and lifetime call count + spend. Free to call.",
-    agentWhoamiSchema.shape,
-    wrapTool("agent_whoami", agentWhoami, { skipPayment: true })
-  );
-  server.tool(
-    "agent_history",
-    "Lists your recent scans (scan_id, tool, target, status, time) so you can retrieve or chain from a prior result. Optional limit/tool/target/since filters. Free to call.",
-    agentHistorySchema.shape,
-    wrapTool("agent_history", agentHistory, { skipPayment: true })
-  );
-  server.tool(
-    "agent_scan_get",
-    "Retrieves one of your prior scans by scan_id, including the stored full output, so you can build on earlier results without re-paying. Free to call.",
-    agentScanGetSchema.shape,
-    wrapTool("agent_scan_get", agentScanGet, { skipPayment: true })
-  );
+  // Free tools — budget self-check, FAQ, and Phase 9.0 identity/history, which
+  // lets an agent retrieve a prior scan instead of paying for it twice.
+  registerFreeTool(server, "account_balance", accountBalanceSchema.shape, accountBalance);
+  registerFreeTool(server, "help", helpSchema.shape, help);
+  registerFreeTool(server, "agent_whoami", agentWhoamiSchema.shape, agentWhoami);
+  registerFreeTool(server, "agent_history", agentHistorySchema.shape, agentHistory);
+  registerFreeTool(server, "agent_scan_get", agentScanGetSchema.shape, agentScanGet);
 
   return server;
 }
