@@ -13,6 +13,7 @@
     "lint": "eslint src/",
     "test": "vitest run",
     "test:watch": "vitest",
+    "eval:routing": "npm run build && node evals/tool-routing.mjs",
     "db:migrate": "node scripts/migrate.js"
   },
   "dependencies": {

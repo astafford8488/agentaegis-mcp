@@ -102,3 +102,15 @@ Prefer this over test payments. Several tools only misbehave on the deployed con
 Add tests to `tests/`. Behavioral tests over snapshot tests; for verdict tools include both a positive and a negative corpus, because the scorers have been retuned twice after a corpus exposed lenient scoring.
 
 If you change pricing, tool names or the free/paid split, `tests/serverGuidance.test.ts` asserts the server instructions and prompt cost quotes against `TOOL_PRICING` and will fail on drift. Fix the source of truth, not the test.
+
+## Routing eval
+
+```bash
+npm run eval:routing
+```
+
+Everything in `toolCatalog.ts` and `instructions.ts` is a bet that better copy produces better tool selection. `evals/tool-routing.mjs` measures it: realistic prompts, scored on which tool the model reaches for, run twice — once with the real server instructions as the system prompt and once without. The difference is what the instructions are actually buying, against the ~1.5k tokens of context they cost every conversation.
+
+It never executes a tool. It stops at the model's first `tool_use` block and reads the name, so it costs Anthropic tokens and zero scan dollars. Needs `ANTHROPIC_API_KEY` in the environment; the script prints how to load it from Credential Manager.
+
+Cases live in `evals/cases.json`. The ones worth protecting are the money-safety behaviours: `reuse-prior-scan` (retrieve a stored result for free instead of re-scanning), `what-can-you-do` (answer catalog questions without spending), and `unauthorized-scan` (refuse to actively scan a third party). Add a case whenever you change routing-relevant copy.
