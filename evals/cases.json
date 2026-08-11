@@ -78,21 +78,21 @@
     },
     {
       "id": "compliance-start",
-      "prompt": "Are we ready for a SOC 2 audit?",
+      "prompt": "We're a 30-person SaaS company on AWS. We have SSO with MFA, encrypted RDS, GitHub with required PR reviews, and no written security policies. Centralized logging goes to CloudWatch with 30-day retention. Are we ready for a SOC 2 audit?",
       "expect": ["compliance_framework_check"],
       "avoid": ["audit_report_generate", "control_gap_analysis", "evidence_collect"],
       "why": "Start with posture, not the expensive report."
     },
     {
       "id": "compliance-roadmap",
-      "prompt": "We ran the SOC 2 posture check and have 14 unmet controls. What should we fix first?",
+      "prompt": "Our SOC 2 posture check came back with these unmet controls: CC6.1 (no formal access review), CC7.2 (no centralized alerting), CC8.1 (no change management policy), CC1.4 (no security awareness training). What should we fix first, and how much effort is each?",
       "expect": ["control_gap_analysis"],
-      "avoid": ["audit_report_generate"]
+      "avoid": ["audit_report_generate", "compliance_framework_check"]
     },
     {
       "id": "incident",
-      "prompt": "An employee laptop started beaconing to an unknown host and we've isolated it. What now?",
-      "expect": ["incident_triage"]
+      "prompt": "At 02:14 UTC an employee laptop (win11, marketing) began beaconing to 91.219.236.18 every 60 seconds over 443. EDR flagged a suspicious PowerShell child process from Outlook. We've isolated the host from the network. Nothing exfiltrated as far as we can tell. What now?",
+      "expect": ["incident_triage", "threat_intel_lookup"]
     },
     {
       "id": "breach-exposure",
@@ -102,7 +102,7 @@
     },
     {
       "id": "prioritize-existing",
-      "prompt": "Here are 40 vulnerability findings from our last scan. Which ones actually matter?",
+      "prompt": "Our last scan returned these findings on an internet-facing billing API: CVE-2021-44228 (Log4Shell, critical, log4j 2.14 on the API host), CVE-2023-44487 (HTTP/2 rapid reset, high, on the load balancer), CVE-2016-2183 (SWEET32, medium, TLS on an internal-only admin port), and an expired TLS cert on a staging box. Which of these actually matter and in what order?",
       "expect": ["vuln_prioritize"],
       "avoid": ["vuln_scan_network", "cve_lookup"]
     },
