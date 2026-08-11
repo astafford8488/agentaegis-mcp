@@ -26,6 +26,7 @@
 //   $env:ANTHROPIC_API_KEY = Get-Secret 'Claude-MCP:anthropic-api-key'
 
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -46,18 +47,38 @@ const ONLY_CASE = flag("case", null);
 const ONLY_ARM = flag("arm", null);
 const VERBOSE = has("verbose");
 
-const API_KEY = process.env.ANTHROPIC_API_KEY;
+const CRED_TARGET = "Claude-MCP:anthropic-api-key";
+
+/** Read the key from Windows Credential Manager via the standard cred.ps1
+ *  helper, so a run needs no env setup on this machine. Env still wins, which
+ *  keeps the eval portable to CI. Returns null rather than throwing when the
+ *  secret is absent — the caller prints the guidance. */
+function keyFromCredentialManager() {
+  if (process.platform !== "win32") return null;
+  const helper = join(process.env.USERPROFILE ?? "", ".claude", "mcp-wrappers", "cred.ps1");
+  try {
+    const out = execFileSync(
+      "powershell.exe",
+      ["-NoProfile", "-NonInteractive", "-Command", `. '${helper}'; Get-Secret '${CRED_TARGET}'`],
+      { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] },
+    );
+    return out.trim() || null;
+  } catch {
+    return null; // not stored yet, or helper missing
+  }
+}
+
+const API_KEY = process.env.ANTHROPIC_API_KEY || keyFromCredentialManager();
 if (!API_KEY) {
   console.error(`
-ANTHROPIC_API_KEY is not set, so the eval cannot run.
+No Anthropic API key found, so the eval cannot run.
 
-  PowerShell:
-    . ~/.claude/mcp-wrappers/cred.ps1
-    $env:ANTHROPIC_API_KEY = Get-Secret 'Claude-MCP:anthropic-api-key'
-    node evals/tool-routing.mjs
+Store it once, in PowerShell (NOT Git Bash):
 
-If that secret does not exist yet, create it once with:
-    Set-Secret 'Claude-MCP:anthropic-api-key' '<key>'
+  . $HOME\\.claude\\mcp-wrappers\\cred.ps1; Set-Secret '${CRED_TARGET}' '<your-key>'
+
+Then "npm run eval:routing" picks it up automatically. Setting
+ANTHROPIC_API_KEY in the environment also works and takes precedence.
 `);
   process.exit(2);
 }
